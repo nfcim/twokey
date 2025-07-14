@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:fauth/common/constant.dart';
+import 'package:fauth/common/system.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -33,40 +34,59 @@ class _WindowTitleBarState extends State<WindowTitleBar> {
 
   @override
   Widget build(BuildContext context) {
-    if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) {
+    if (!isDesktop()) {
       return const SizedBox.shrink();
     }
-    return Container(
-      height: widget.preferredSize.height,
-      color: Theme.of(context).colorScheme.surface,
-      child: Row(
+    return Material(
+      // height: widget.preferredSize.height,
+      // color: Theme.of(context).colorScheme.surface,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Expanded(
+          Positioned(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onPanStart: (_) => windowManager.startDragging(),
               onDoubleTap: () => _updateMaximizedState(),
-              child: Row(children: [const AppIcon(), const Spacer()]),
+              child: Container(
+                color: Theme.of(
+                  context,
+                ).colorScheme.secondary.withOpacity(0.15),
+                alignment: Alignment.centerLeft,
+                height: titleBarHeight,
+              ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.remove, size: 16),
-            onPressed: () => windowManager.minimize(),
-            splashRadius: 16,
-          ),
-          IconButton(
-            icon: Icon(
-              _isMaximized ? Icons.filter_none : Icons.crop_square,
-              size: 16,
+          if (Platform.isMacOS)
+            const Text(appName)
+          else ...[
+            Positioned(left: 0, child: AppIcon()),
+            Positioned(
+              right: 0,
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove, size: 16),
+                    onPressed: () => windowManager.minimize(),
+                    splashRadius: 16,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isMaximized ? Icons.filter_none : Icons.crop_square,
+                      size: 16,
+                    ),
+                    onPressed: () => _updateMaximizedState(),
+                    splashRadius: 16,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => windowManager.close(),
+                    splashRadius: 16,
+                  ),
+                ],
+              ),
             ),
-            onPressed: () => _updateMaximizedState(),
-            splashRadius: 16,
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 16),
-            onPressed: () => windowManager.close(),
-            splashRadius: 16,
-          ),
+          ],
         ],
       ),
     );
