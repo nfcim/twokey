@@ -1,0 +1,115 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+
+# Web related
+web/.dart_tool/
+web/build/
+
+# Android related
+android/.gradle/
+android/captures/
+android/app/build/
+android/key.properties
+
+# iOS/Xcode related
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/Flutter.podspec
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/build/
+ios/.symlinks/
+ios/Flutter/GeneratedPluginRegistrant.*
+ios/Flutter/ephemeral/
+ios/.dart_tool/
+ios/.idea/
+ios/.vscode/
+*.xcuserstate
+
+# macOS related
+macos/Flutter/ephemeral/
+macos/Pods/
+macos/build/
+macos/.symlinks/
+macos/.dart_tool/
+macos/.idea/
+macos/.vscode/
+
+# Linux related
+linux/flutter/ephemeral/
+linux/build/
+linux/.dart_tool/
+
+# Windows related
+windows/flutter/ephemeral/
+windows/build/
+windows/.dart_tool/
+
+# Fuchsia related
+.fuchsia/
+
+# VS Code related
+.vscode/
+
+# IntelliJ related
+.idea/
+*.iml
+
+# Miscellaneous
+*.log
+*.tmp
+*.swp
+*.lock
+*.DS_Store
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.ipr
+*.iws
+*.suo
+*.ntvs_analysis.dat
+*.orig
+*.rej
+*.bak
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+*.nib
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcworkspace
+*.xcuserstate
+*.moved-aside
+*.xcuserdatad
+*.xccheckout
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/xcshareddata/WorkspaceSettings.xcsettings
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Symbolication
+*.symbols
+
+# Obfuscation
+app.*.symbols
+
+# Coverage
+coverage/
