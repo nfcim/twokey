@@ -1,16 +1,17 @@
-# fauth
+# FAuth
 
-A new Flutter project.
+FAuth is a cross-platform WebAuthn key management application built with Flutter. It supports Android, iOS, Windows, macOS, and Linux, providing a unified experience for managing your WebAuthn credentials across devices.
+
+## Features
+
+- View registered WebAuthn key information, including RP ID, User ID, public key, and more.
+- Delete credentials that are no longer needed.
+- Test WebAuthn registration and authentication flows directly within the app.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This project is currently under active development. Stay tuned for installation instructions and usage guides.
 
-A few resources to get you started if this is your first Flutter project:
+## About
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+FAuth aims to make WebAuthn credential management intuitive and accessible on all major platforms.
