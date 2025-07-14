@@ -3,10 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fauth/manager/window_manager.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:fauth/common/system.dart' as system;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  if (system.isDesktop()) {
     windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Size(400, 600),

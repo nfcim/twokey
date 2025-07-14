@@ -37,6 +37,7 @@ class _WindowTitleBarState extends State<WindowTitleBar> {
     if (!isDesktop()) {
       return const SizedBox.shrink();
     }
+    // windowManager.setHasShadow(true);
     return Material(
       // height: widget.preferredSize.height,
       // color: Theme.of(context).colorScheme.surface,
@@ -51,7 +52,7 @@ class _WindowTitleBarState extends State<WindowTitleBar> {
               child: Container(
                 color: Theme.of(
                   context,
-                ).colorScheme.secondary.withOpacity(0.15),
+                ).colorScheme.secondary.withValues(alpha: 0.15),
                 alignment: Alignment.centerLeft,
                 height: titleBarHeight,
               ),

@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'system.dart' as system;
+import 'package:fauth/common/system.dart' as system;
 
 const appName = 'FAuth';
 final double titleBarHeight = system.isDesktop()
