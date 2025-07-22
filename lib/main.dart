@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:fauth/common/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:fauth/manager/window_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:fauth/common/system.dart' as system;
+import 'package:fauth/pages/settings.dart';
+import 'package:fauth/pages/keys.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +17,7 @@ void main() {
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
+      // titleBarStyle: TitleBarStyle.hidden,
     );
 
     windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -49,35 +52,96 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  var selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: WindowTitleBar(title: 'FAuth'),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        page = KeysPage();
+        break;
+      case 1:
+        page = SettingsPage();
+        break;
+      default:
+        throw UnimplementedError('no widget for $selectedIndex');
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 450) {
+          return Scaffold(
+            // appBar: WindowTitleBar(),
+            body: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: page,
+                  ),
+                ),
+                SafeArea(
+                  child: BottomNavigationBar(
+                    // extended: constraints.maxWidth >= 600,
+                    items: [
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.key),
+                        label: 'WebAuthn',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.settings),
+                        label: 'Settings',
+                      ),
+                    ],
+                    currentIndex: selectedIndex,
+                    onTap: (value) {
+                      setState(() {
+                        selectedIndex = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+          );
+        } else {
+          return Scaffold(
+            // appBar: WindowTitleBar(),
+            body: Row(
+              children: [
+                SafeArea(
+                  child: NavigationRail(
+                    extended: constraints.maxWidth >= 640,
+                    destinations: [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.key),
+                        label: Text('WebAuthn'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.settings),
+                        label: Text('Settings'),
+                      ),
+                    ],
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (value) {
+                      setState(() {
+                        selectedIndex = value;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: page,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      },
     );
   }
 }
