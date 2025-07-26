@@ -1,8 +1,8 @@
-import 'dart:io';
-
-import 'package:fauth/common/constant.dart';
+import 'package:fauth/api/ccid_fido_api.dart';
+import 'package:fauth/repositories/credential_repository.dart';
+import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:fauth/manager/window_manager.dart';
+import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:fauth/common/system.dart' as system;
 import 'package:fauth/pages/settings.dart';
@@ -25,7 +25,16 @@ void main() {
       await windowManager.focus();
     });
   }
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => KeysViewModel(CredentialRepository(CcidFidoApi())),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -59,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget page;
     switch (selectedIndex) {
       case 0:
-        page = KeysPage();
+        page = const KeysPage();
         break;
       case 1:
         page = SettingsPage();

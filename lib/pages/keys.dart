@@ -1,81 +1,46 @@
+import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class KeysPage extends StatefulWidget {
+class KeysPage extends StatelessWidget {
   const KeysPage({super.key});
 
   @override
-  State<KeysPage> createState() => _KeysPageState();
-}
-
-class _KeysPageState extends State<KeysPage> {
-  final List<Map<String, String>> _keys = [
-    {'name': 'MacBook Pro TouchID', 'created': '2024-11-01', 'id': '1'},
-    {'name': 'iPhone FaceID', 'created': '2025-01-15', 'id': '2'},
-    {'name': 'YubiKey 5 NFC', 'created': '2025-03-22', 'id': '3'},
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    var viewModel = Provider.of<KeysViewModel>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('WebAuthn 密钥')),
-      body: ListView.separated(
-        itemCount: _keys.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final key = _keys[index];
-          return ListTile(
-            leading: const Icon(Icons.vpn_key),
-            title: Text(key['name'] ?? ''),
-            subtitle: Text('注册时间:  ${key['created']}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.info_outline),
-                  tooltip: '详情',
-                  onPressed: () {
-                    // 仅 UI 演示，无实际功能
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('密钥详情'),
-                        content: Text(
-                          '名称: ${key['name']}\n注册时间: ${key['created']}',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('关闭'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (viewModel.isLoading) const CircularProgressIndicator(),
+            if (viewModel.authenticatorInfo != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SelectableText(
+                  'AAGUID: ${viewModel.authenticatorInfo!.aaguid.map((e) => e.toRadixString(16).padLeft(2, '0')).join('')}\n'
+                  'Versions: ${viewModel.authenticatorInfo!.versions.join(', ')}\n'
+                  'Extensions: ${viewModel.authenticatorInfo!.extensions?.join(', ') ?? 'N/A'}',
+                  textAlign: TextAlign.center,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: '删除',
-                  onPressed: () {
-                    // 仅 UI 演示，无实际删除
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('演示：未实现删除功能')));
-                  },
+              ),
+            if (viewModel.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SelectableText(
+                  'Error: ${viewModel.errorMessage}',
+                  style: const TextStyle(color: Colors.red),
                 ),
-              ],
+              ),
+            ElevatedButton(
+              onPressed: viewModel.isLoading
+                  ? null
+                  : viewModel.fetchAuthenticatorInfo,
+              child: const Text('Authenticator Info'),
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // 仅 UI 演示，无实际添加功能
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('演示：未实现添加功能')));
-        },
-        tooltip: '添加密钥',
-        child: const Icon(Icons.add),
+          ],
+        ),
       ),
     );
   }
