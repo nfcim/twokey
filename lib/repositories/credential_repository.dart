@@ -1,8 +1,10 @@
 import 'package:convert/convert.dart';
 import 'package:fauth/api/fido_api.dart';
+import 'package:fauth/models/credential.dart';
 import 'package:fido2/fido2.dart';
 import 'package:fido2/src/ctap.dart';
 import 'dart:typed_data';
+import 'package:fido2/src/ctap2/entities/authenticator_info.dart';
 
 class _ApiCtapDevice extends CtapDevice {
   final Future<Uint8List> Function(Uint8List) _transceive;
@@ -57,18 +59,41 @@ class _ApiCtapDevice extends CtapDevice {
 class CredentialRepository {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
+  CredentialManagement? _credMgmtClient;
 
   CredentialRepository(this._fidoApi);
 
-  Future<void> connect() async {
+  Future<void> connect({String pin = ''}) async {
     await _fidoApi.connect();
     final device = _ApiCtapDevice(_fidoApi.transceive);
     _ctap2Client = await Ctap2.create(device);
+
+    if (CredentialManagement.isSupported(_ctap2Client!.info)) {
+      PinProtocol pinProtocol;
+      final protocols = _ctap2Client!.info.pinUvAuthProtocols;
+      if (protocols != null && protocols.contains(2)) {
+        pinProtocol = PinProtocolV2();
+      } else {
+        pinProtocol = PinProtocolV1();
+      }
+
+      final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
+      final pinToken = await clientPin.getPinToken(
+        pin,
+        permissions: [ClientPinPermission.credentialManagement],
+      );
+      _credMgmtClient = CredentialManagement(
+        _ctap2Client!,
+        pinProtocol,
+        pinToken,
+      );
+    }
   }
 
   Future<void> disconnect() async {
     await _fidoApi.disconnect();
     _ctap2Client = null;
+    _credMgmtClient = null;
   }
 
   Future<AuthenticatorInfo> getAuthenticatorInfo() async {
@@ -77,5 +102,42 @@ class CredentialRepository {
     }
     // Now we use the existing client instance.
     return _ctap2Client!.info;
+  }
+
+  Future<List<Credential>> getCredentials() async {
+    if (_credMgmtClient == null) {
+      if (_ctap2Client == null) {
+        throw Exception('Not connected. Call connect() first.');
+      }
+      throw Exception(
+        'This authenticator does not support credential management.',
+      );
+    }
+
+    final List<Credential> allCredentials = [];
+    final rps = await _credMgmtClient!.enumerateRPs();
+    for (var rp in rps) {
+      final credentials = await _credMgmtClient!.enumerateCredentials(
+        rp.rpIdHash,
+      );
+      for (var cred in credentials) {
+        allCredentials.add(
+          Credential(
+            rpId: rp.rp.id,
+            userName: cred.user.name,
+            userId: String.fromCharCodes(cred.user.id),
+          ),
+        );
+      }
+    }
+    return allCredentials;
+  }
+
+  Future<void> deleteCredential(String userId) async {
+    // TODO: Implement actual credential deletion on the authenticator
+    await Future.delayed(
+      const Duration(milliseconds: 500),
+    ); // Simulate network delay
+    print('Deleted credential with userId: $userId');
   }
 }

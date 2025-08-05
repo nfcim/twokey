@@ -140,10 +140,9 @@ packages:
   fido2:
     dependency: "direct main"
     description:
-      name: fido2
-      sha256: "6c46033062c8b831edf9b040c3e28df8794abfc4af5ad24efa4bbd9786812e35"
-      url: "https://pub.dev"
-    source: hosted
+      path: "/mnt/Documents/Code/fido2/"
+      relative: false
+    source: path
     version: "0.0.5"
   fixnum:
     dependency: transitive

@@ -1,3 +1,4 @@
+import 'package:fauth/pages/credential_list.dart';
 import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,25 @@ class KeysPage extends StatelessWidget {
                   ? null
                   : viewModel.fetchAuthenticatorInfo,
               child: const Text('Authenticator Info'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: viewModel.isLoading
+                  ? null
+                  : () async {
+                      await viewModel.fetchCredentials();
+                      if (viewModel.credentials.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CredentialListPage(
+                              credentials: viewModel.credentials,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+              child: const Text('List Credentials'),
             ),
           ],
         ),
