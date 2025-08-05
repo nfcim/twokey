@@ -2,12 +2,13 @@ import 'package:convert/convert.dart';
 import 'package:fauth/api/fido_api.dart';
 import 'package:fauth/models/credential.dart';
 import 'package:fido2/fido2.dart';
-import 'package:fido2/src/ctap.dart';
 import 'dart:typed_data';
-import 'package:fido2/src/ctap2/entities/authenticator_info.dart';
+
+import 'package:logger/logger.dart';
 
 class _ApiCtapDevice extends CtapDevice {
   final Future<Uint8List> Function(Uint8List) _transceive;
+  final _logger = Logger(printer: SimplePrinter());
 
   _ApiCtapDevice(this._transceive);
 
@@ -23,10 +24,10 @@ class _ApiCtapDevice extends CtapDevice {
       0x00,
     ];
     final commandBytes = Uint8List.fromList(apduCommand);
-    print('--> APDU Command (hex): ${hex.encode(commandBytes)}');
+    _logger.d('--> APDU Command (hex): ${hex.encode(commandBytes)}');
 
     return _transceive(commandBytes).then((responseBytes) {
-      print('<-- APDU Response (hex): ${hex.encode(responseBytes)}');
+      _logger.d('<-- APDU Response (hex): ${hex.encode(responseBytes)}');
 
       if (responseBytes.length < 2) {
         throw Exception('APDU response is too short.');
@@ -48,7 +49,7 @@ class _ApiCtapDevice extends CtapDevice {
 
       final ctapStatus = ctapPayload[0];
       final cborData = ctapPayload.sublist(1);
-      print(
+      _logger.d(
         '<-- CTAP Status: 0x${ctapStatus.toRadixString(16)}, CBOR Length: ${cborData.length}',
       );
       return CtapResponse(ctapStatus, cborData);
@@ -60,6 +61,7 @@ class CredentialRepository {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
   CredentialManagement? _credMgmtClient;
+  final _logger = Logger(printer: SimplePrinter());
 
   CredentialRepository(this._fidoApi);
 
@@ -138,6 +140,6 @@ class CredentialRepository {
     await Future.delayed(
       const Duration(milliseconds: 500),
     ); // Simulate network delay
-    print('Deleted credential with userId: $userId');
+    _logger.i('Deleted credential with userId: $userId');
   }
 }

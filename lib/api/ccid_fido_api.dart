@@ -2,9 +2,11 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:ccid/ccid.dart';
 import 'package:fauth/api/fido_api.dart';
+import 'package:logger/logger.dart';
 
 class CcidFidoApi implements FidoApi {
   CcidCard? _card;
+  final _logger = Logger(printer: SimplePrinter());
 
   @override
   Future<void> connect() async {
@@ -19,9 +21,9 @@ class CcidFidoApi implements FidoApi {
 
     const fidoAid = 'A0000006472F0001';
     final selectApdu = '00A4040008$fidoAid';
-    print('--> SELECT FIDO App: $selectApdu');
+    _logger.d('--> SELECT FIDO App: $selectApdu');
     final response = await _card!.transceive(selectApdu);
-    print('<-- SELECT Response: $response');
+    _logger.d('<-- SELECT Response: $response');
 
     if (response == null || !response.endsWith('9000')) {
       throw Exception(
