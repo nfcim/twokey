@@ -46,6 +46,7 @@ class KeysPage extends StatelessWidget {
                   ? null
                   : () async {
                       await viewModel.fetchCredentials();
+                      if (!context.mounted) return;
                       if (viewModel.credentials.isNotEmpty) {
                         Navigator.push(
                           context,
