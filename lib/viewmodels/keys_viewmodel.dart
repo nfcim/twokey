@@ -2,6 +2,8 @@ import 'package:fauth/models/credential.dart';
 import 'package:fauth/repositories/credential_repository.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
+import 'package:fauth/core/result/result.dart';
+import 'package:fauth/core/error/failure.dart';
 
 class KeysViewModel extends ChangeNotifier {
   final CredentialRepository _repository;
@@ -9,6 +11,7 @@ class KeysViewModel extends ChangeNotifier {
   List<Credential> credentials = [];
   bool isLoading = false;
   String? errorMessage;
+  bool pinRequired = false; // signal UI to request PIN
 
   bool _isConnected = false;
 
@@ -25,20 +28,43 @@ class KeysViewModel extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
 
-    try {
-      if (!_isConnected) {
-        // TODO: Prompt user for PIN
-        await _repository.connect(pin: '123456');
-        _isConnected = true;
+    if (!_isConnected) {
+      final connectRes = await _repository.connect(
+        pin: '123456',
+      ); // TODO: replace with user input
+      if (connectRes is Err<void, Failure>) {
+        final failure = connectRes.error;
+        if (failure is PinRequiredFailure) {
+          pinRequired = true;
+        } else {
+          errorMessage = failure.message;
+        }
+        isLoading = false;
+        _isConnected = false;
+        notifyListeners();
+        return;
       }
-      credentials = await _repository.getCredentials();
-    } catch (e) {
-      errorMessage = e.toString();
-      _isConnected = false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
+      pinRequired = false;
+      _isConnected = true;
     }
+
+    final result = await _repository.getCredentials();
+    result.match(
+      ok: (data) {
+        credentials = data;
+      },
+      err: (f) {
+        if (f is PinRequiredFailure) {
+          pinRequired = true;
+          _isConnected = false; // force reconnection with new PIN
+        } else {
+          errorMessage = f.message;
+          if (f is ConnectionFailure) _isConnected = false;
+        }
+      },
+    );
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<void> fetchAuthenticatorInfo() async {
@@ -46,21 +72,39 @@ class KeysViewModel extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
 
-    try {
-      if (!_isConnected) {
-        // TODO: Prompt user for PIN
-        await _repository.connect(pin: '123456');
-        _isConnected = true;
+    if (!_isConnected) {
+      final connectRes = await _repository.connect(pin: '123456');
+      if (connectRes is Err<void, Failure>) {
+        final failure = connectRes.error;
+        if (failure is PinRequiredFailure) {
+          pinRequired = true;
+        } else {
+          errorMessage = failure.message;
+        }
+        isLoading = false;
+        _isConnected = false;
+        notifyListeners();
+        return;
       }
-      authenticatorInfo = await _repository.getAuthenticatorInfo();
-    } catch (e) {
-      errorMessage = e.toString();
-      // On error, reset connection state to allow retry.
-      _isConnected = false;
-    } finally {
-      isLoading = false;
-      notifyListeners();
+      pinRequired = false;
+      _isConnected = true;
     }
+
+    final result = await _repository.getAuthenticatorInfo();
+    result.match(
+      ok: (info) => authenticatorInfo = info,
+      err: (f) {
+        if (f is PinRequiredFailure) {
+          pinRequired = true;
+          _isConnected = false;
+        } else {
+          errorMessage = f.message;
+          if (f is ConnectionFailure) _isConnected = false;
+        }
+      },
+    );
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<void> deleteCredential(String userId) async {
@@ -68,15 +112,20 @@ class KeysViewModel extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
 
-    try {
-      await _repository.deleteCredential(userId);
-      credentials.removeWhere((cred) => cred.userId == userId);
-    } catch (e) {
-      errorMessage = e.toString();
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
+    final result = await _repository.deleteCredential(userId);
+    result.match(
+      ok: (_) => credentials.removeWhere((cred) => cred.userId == userId),
+      err: (f) {
+        if (f is PinRequiredFailure) {
+          pinRequired = true;
+          _isConnected = false;
+        } else {
+          errorMessage = f.message;
+        }
+      },
+    );
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<void> deleteCredentialByModel(Credential credential) async {

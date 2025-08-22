@@ -5,6 +5,8 @@ import 'package:fido2/fido2.dart';
 import 'dart:typed_data';
 
 import 'package:fauth/core/logging/app_logger.dart';
+import 'package:fauth/core/result/result.dart';
+import 'package:fauth/core/error/failure.dart';
 
 class _ApiCtapDevice extends CtapDevice {
   final Future<Uint8List> Function(Uint8List) _transceive;
@@ -60,92 +62,141 @@ class CredentialRepository {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
   CredentialManagement? _credMgmtClient;
-  // Central logging
 
   CredentialRepository(this._fidoApi);
 
-  Future<void> connect({String pin = ''}) async {
-    await _fidoApi.connect();
-    final device = _ApiCtapDevice(_fidoApi.transceive);
-    _ctap2Client = await Ctap2.create(device);
-
-    if (CredentialManagement.isSupported(_ctap2Client!.info)) {
-      PinProtocol pinProtocol;
-      final protocols = _ctap2Client!.info.pinUvAuthProtocols;
-      if (protocols != null && protocols.contains(2)) {
-        pinProtocol = PinProtocolV2();
-      } else {
-        pinProtocol = PinProtocolV1();
+  Failure _failureFrom(Object e, StackTrace st) {
+    final msg = e.toString();
+    if (e is CtapError) {
+      // 0x33 = ctap2ErrPinAuthInvalid -> treat as needing fresh PIN entry
+      if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
+        return PinRequiredFailure(cause: e, stackTrace: st);
       }
+    }
+    if (msg.contains('No reader')) {
+      return DeviceNotFoundFailure(cause: e, stackTrace: st);
+    }
+    if (msg.contains('not support credential management')) {
+      return const UnsupportedFailure('credential management');
+    }
+    if (msg.contains('PIN')) {
+      return PinRequiredFailure(cause: e, stackTrace: st);
+    }
+    if (msg.contains('Not connected')) {
+      return ConnectionFailure(msg, cause: e, stackTrace: st);
+    }
+    if (msg.contains('Credential not found')) {
+      return OperationFailure(msg, cause: e, stackTrace: st);
+    }
+    return UnknownFailure(cause: e, stackTrace: st);
+  }
 
-      final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
-      final pinToken = await clientPin.getPinToken(
-        pin,
-        permissions: [ClientPinPermission.credentialManagement],
-      );
-      _credMgmtClient = CredentialManagement(
-        _ctap2Client!,
-        pinProtocol,
-        pinToken,
-      );
+  Future<Result<void, Failure>> connect({String pin = ''}) async {
+    try {
+      await _fidoApi.connect();
+      final device = _ApiCtapDevice(_fidoApi.transceive);
+      _ctap2Client = await Ctap2.create(device);
+
+      if (CredentialManagement.isSupported(_ctap2Client!.info)) {
+        PinProtocol pinProtocol;
+        final protocols = _ctap2Client!.info.pinUvAuthProtocols;
+        if (protocols != null && protocols.contains(2)) {
+          pinProtocol = PinProtocolV2();
+        } else {
+          pinProtocol = PinProtocolV1();
+        }
+
+        final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
+        final pinToken = await clientPin.getPinToken(
+          pin,
+          permissions: [ClientPinPermission.credentialManagement],
+        );
+        _credMgmtClient = CredentialManagement(
+          _ctap2Client!,
+          pinProtocol,
+          pinToken,
+        );
+      }
+      return const Ok(null);
+    } catch (e, st) {
+      final failure = _failureFrom(e, st);
+      AppLogger.error('Connect failed: ${failure.message}', e, st);
+      return Err(failure);
     }
   }
 
   Future<void> disconnect() async {
-    await _fidoApi.disconnect();
-    _ctap2Client = null;
-    _credMgmtClient = null;
-  }
-
-  Future<AuthenticatorInfo> getAuthenticatorInfo() async {
-    if (_ctap2Client == null) {
-      throw Exception('Not connected. Call connect() first.');
+    try {
+      await _fidoApi.disconnect();
+    } finally {
+      _ctap2Client = null;
+      _credMgmtClient = null;
     }
-    // Now we use the existing client instance.
-    return _ctap2Client!.info;
   }
 
-  Future<List<Credential>> getCredentials() async {
-    if (_credMgmtClient == null) {
+  Future<Result<AuthenticatorInfo, Failure>> getAuthenticatorInfo() async {
+    try {
       if (_ctap2Client == null) {
         throw Exception('Not connected. Call connect() first.');
       }
-      throw Exception(
-        'This authenticator does not support credential management.',
+      return Ok(_ctap2Client!.info);
+    } catch (e, st) {
+      final failure = _failureFrom(e, st);
+      AppLogger.error(
+        'Get authenticator info failed: ${failure.message}',
+        e,
+        st,
       );
+      return Err(failure);
     }
+  }
 
-    final List<Credential> allCredentials = [];
-    final rps = await _credMgmtClient!.enumerateRPs();
-    for (var rp in rps) {
-      final credentials = await _credMgmtClient!.enumerateCredentials(
-        rp.rpIdHash,
-      );
-      for (var cred in credentials) {
-        allCredentials.add(
-          Credential(
-            rpId: rp.rp.id,
-            userName: cred.user.name,
-            userId: String.fromCharCodes(cred.user.id),
-          ),
+  Future<Result<List<Credential>, Failure>> getCredentials() async {
+    try {
+      if (_credMgmtClient == null) {
+        if (_ctap2Client == null) {
+          throw Exception('Not connected. Call connect() first.');
+        }
+        throw Exception(
+          'This authenticator does not support credential management.',
         );
       }
+
+      final List<Credential> allCredentials = [];
+      final rps = await _credMgmtClient!.enumerateRPs();
+      for (var rp in rps) {
+        final credentials = await _credMgmtClient!.enumerateCredentials(
+          rp.rpIdHash,
+        );
+        for (var cred in credentials) {
+          allCredentials.add(
+            Credential(
+              rpId: rp.rp.id,
+              userName: cred.user.name,
+              userId: String.fromCharCodes(cred.user.id),
+            ),
+          );
+        }
+      }
+      return Ok(allCredentials);
+    } catch (e, st) {
+      final failure = _failureFrom(e, st);
+      AppLogger.error('Get credentials failed: ${failure.message}', e, st);
+      return Err(failure);
     }
-    return allCredentials;
   }
 
-  Future<void> deleteCredential(String userId) async {
-    if (_credMgmtClient == null) {
-      if (_ctap2Client == null) {
-        throw Exception('Not connected. Call connect() first.');
-      }
-      throw Exception(
-        'This authenticator does not support credential management.',
-      );
-    }
-
+  Future<Result<void, Failure>> deleteCredential(String userId) async {
     try {
-      // Re-enumerate RPs and credentials to locate the target credential.
+      if (_credMgmtClient == null) {
+        if (_ctap2Client == null) {
+          throw Exception('Not connected. Call connect() first.');
+        }
+        throw Exception(
+          'This authenticator does not support credential management.',
+        );
+      }
+
       final rps = await _credMgmtClient!.enumerateRPs();
       for (final rp in rps) {
         final creds = await _credMgmtClient!.enumerateCredentials(rp.rpIdHash);
@@ -157,14 +208,15 @@ class CredentialRepository {
             );
             await _credMgmtClient!.deleteCredential(cred.credentialId);
             AppLogger.info('Deleted credential userId=$userId');
-            return;
+            return const Ok(null);
           }
         }
       }
       throw Exception('Credential not found for userId: $userId');
-    } catch (e) {
-      AppLogger.error('Failed to delete credential', e);
-      rethrow;
+    } catch (e, st) {
+      final failure = _failureFrom(e, st);
+      AppLogger.error('Delete credential failed: ${failure.message}', e, st);
+      return Err(failure);
     }
   }
 }
