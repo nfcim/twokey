@@ -78,4 +78,8 @@ class KeysViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteCredentialByModel(Credential credential) async {
+    await deleteCredential(credential.userId);
+  }
 }

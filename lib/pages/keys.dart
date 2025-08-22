@@ -53,6 +53,9 @@ class KeysPage extends StatelessWidget {
                           MaterialPageRoute(
                             builder: (context) => CredentialListPage(
                               credentials: viewModel.credentials,
+                              onDelete: (cred) async {
+                                await viewModel.deleteCredentialByModel(cred);
+                              },
                             ),
                           ),
                         );

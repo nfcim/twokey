@@ -136,10 +136,34 @@ class CredentialRepository {
   }
 
   Future<void> deleteCredential(String userId) async {
-    // TODO: Implement actual credential deletion on the authenticator
-    await Future.delayed(
-      const Duration(milliseconds: 500),
-    ); // Simulate network delay
-    _logger.i('Deleted credential with userId: $userId');
+    if (_credMgmtClient == null) {
+      if (_ctap2Client == null) {
+        throw Exception('Not connected. Call connect() first.');
+      }
+      throw Exception(
+        'This authenticator does not support credential management.',
+      );
+    }
+
+    try {
+      // Re-enumerate RPs and credentials to locate the target credential.
+      final rps = await _credMgmtClient!.enumerateRPs();
+      for (final rp in rps) {
+        final creds = await _credMgmtClient!.enumerateCredentials(rp.rpIdHash);
+        for (final cred in creds) {
+          final candidateUserId = String.fromCharCodes(cred.user.id);
+          if (candidateUserId == userId) {
+            _logger.i('Deleting credential userId=$userId rpId=${rp.rp.id}');
+            await _credMgmtClient!.deleteCredential(cred.credentialId);
+            _logger.i('Deleted credential userId=$userId');
+            return;
+          }
+        }
+      }
+      throw Exception('Credential not found for userId: $userId');
+    } catch (e) {
+      _logger.e('Failed to delete credential: $e');
+      rethrow;
+    }
   }
 }
