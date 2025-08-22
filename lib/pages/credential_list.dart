@@ -1,15 +1,10 @@
 import 'package:fauth/models/credential.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fauth/viewmodels/keys_viewmodel.dart';
 
 class CredentialListPage extends StatelessWidget {
-  final List<Credential> credentials;
-  final ValueChanged<Credential>? onDelete;
-
-  const CredentialListPage({
-    super.key,
-    required this.credentials,
-    this.onDelete,
-  });
+  const CredentialListPage({super.key});
 
   Future<bool> _deleteConfirmation(
     BuildContext context,
@@ -61,40 +56,60 @@ class CredentialListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Credentials')),
-      body: ListView.builder(
-        itemCount: credentials.length,
-        itemBuilder: (context, index) {
-          final credential = credentials[index];
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            child: ListTile(
-              leading: const Icon(Icons.vpn_key),
-              title: Text(credential.rpId),
-              subtitle: Text(credential.userName),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () async {
-                  final confirmed = await _deleteConfirmation(
-                    context,
-                    credential,
-                  );
-
-                  if (confirmed) {
-                    if (!context.mounted) return;
-
-                    onDelete?.call(credential);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Credential deleted')),
+    return Consumer<KeysViewModel>(
+      builder: (context, vm, _) {
+        final list = vm.credentials;
+        return Scaffold(
+          appBar: AppBar(title: const Text('Credentials')),
+          body: list.isEmpty
+              ? const Center(child: Text('No credentials'))
+              : ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (context, index) {
+                    final credential = list[index];
+                    return Card(
+                      margin: const EdgeInsets.all(8.0),
+                      child: ListTile(
+                        leading: const Icon(Icons.vpn_key),
+                        title: Text(credential.rpId),
+                        subtitle: Text(credential.userName),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () async {
+                            final confirmed = await _deleteConfirmation(
+                              context,
+                              credential,
+                            );
+                            if (!confirmed) return;
+                            if (!context.mounted) return;
+                            final ok = await vm.deleteCredentialByModel(
+                              credential,
+                            );
+                            if (!context.mounted) return;
+                            if (ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Credential deleted'),
+                                ),
+                              );
+                            } else if (vm.errorMessage != null &&
+                                !vm.pinRequired) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Delete failed: ${vm.errorMessage}',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
                     );
-                  }
-                },
-              ),
-            ),
-          );
-        },
-      ),
+                  },
+                ),
+        );
+      },
     );
   }
 }

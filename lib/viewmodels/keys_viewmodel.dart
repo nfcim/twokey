@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fauth/models/credential.dart';
 import 'package:fauth/repositories/credential_repository.dart';
 import 'package:fido2/fido2.dart';
@@ -14,6 +15,8 @@ class KeysViewModel extends ChangeNotifier {
   bool pinRequired = false; // signal UI to request PIN
 
   bool _isConnected = false;
+  String? _pin; // current PIN (valid for session)
+  Completer<String>? _pinCompleter; // waits for user PIN entry
 
   KeysViewModel(this._repository);
 
@@ -23,112 +26,119 @@ class KeysViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> fetchCredentials() async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
+  Future<bool> fetchCredentials() async => _runWithPinLoop<List<Credential>>(
+    () => _repository.getCredentials(),
+    onSuccess: (data) => credentials = data,
+  );
 
-    if (!_isConnected) {
-      final connectRes = await _repository.connect(
-        pin: '123456',
-      ); // TODO: replace with user input
-      if (connectRes is Err<void, Failure>) {
-        final failure = connectRes.error;
-        if (failure is PinRequiredFailure) {
-          pinRequired = true;
-        } else {
-          errorMessage = failure.message;
-        }
-        isLoading = false;
-        _isConnected = false;
-        notifyListeners();
-        return;
-      }
-      pinRequired = false;
-      _isConnected = true;
+  Future<bool> fetchAuthenticatorInfo() async =>
+      _runWithPinLoop<AuthenticatorInfo>(
+        () => _repository.getAuthenticatorInfo(),
+        onSuccess: (info) => authenticatorInfo = info,
+      );
+
+  Future<bool> deleteCredential(String userId) async => _runWithPinLoop<void>(
+    () => _repository.deleteCredential(userId),
+    onSuccess: (_) {
+      credentials.removeWhere((c) => c.userId == userId);
+    },
+  );
+
+  Future<bool> deleteCredentialByModel(Credential credential) async =>
+      deleteCredential(credential.userId);
+
+  // --- Internal helpers (loop + PIN) ---
+  Future<bool> _connectIfNeeded() async {
+    if (_isConnected) return true;
+    while (_pin == null) {
+      await _awaitPin();
     }
-
-    final result = await _repository.getCredentials();
-    result.match(
-      ok: (data) {
-        credentials = data;
-      },
-      err: (f) {
-        if (f is PinRequiredFailure) {
-          pinRequired = true;
-          _isConnected = false; // force reconnection with new PIN
-        } else {
-          errorMessage = f.message;
-          if (f is ConnectionFailure) _isConnected = false;
-        }
-      },
-    );
-    isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> fetchAuthenticatorInfo() async {
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-
-    if (!_isConnected) {
-      final connectRes = await _repository.connect(pin: '123456');
-      if (connectRes is Err<void, Failure>) {
-        final failure = connectRes.error;
-        if (failure is PinRequiredFailure) {
-          pinRequired = true;
-        } else {
-          errorMessage = failure.message;
-        }
-        isLoading = false;
-        _isConnected = false;
-        notifyListeners();
-        return;
-      }
-      pinRequired = false;
+    final res = await _repository.connect(pin: _pin!);
+    if (res is Ok) {
       _isConnected = true;
+      pinRequired = false;
+      return true;
     }
-
-    final result = await _repository.getAuthenticatorInfo();
-    result.match(
-      ok: (info) => authenticatorInfo = info,
-      err: (f) {
-        if (f is PinRequiredFailure) {
-          pinRequired = true;
-          _isConnected = false;
-        } else {
-          errorMessage = f.message;
-          if (f is ConnectionFailure) _isConnected = false;
-        }
-      },
-    );
-    isLoading = false;
-    notifyListeners();
+    final failure = (res as Err).error;
+    if (failure is PinRequiredFailure) {
+      _pin = null; // force ask again
+      _isConnected = false;
+      return _connectIfNeeded();
+    }
+    errorMessage = failure.message;
+    return false;
   }
 
-  Future<void> deleteCredential(String userId) async {
+  Future<void> submitPin(String pin) async {
+    if (pin.isEmpty) return;
+    _pin = pin.trim();
+    pinRequired = false;
+    errorMessage = null;
+    notifyListeners();
+    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
+      _pinCompleter!.complete(_pin);
+      _pinCompleter = null;
+    }
+  }
+
+  Future<bool> connectWithCurrentPin() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
-
-    final result = await _repository.deleteCredential(userId);
-    result.match(
-      ok: (_) => credentials.removeWhere((cred) => cred.userId == userId),
-      err: (f) {
-        if (f is PinRequiredFailure) {
-          pinRequired = true;
-          _isConnected = false;
-        } else {
-          errorMessage = f.message;
-        }
-      },
-    );
+    final ok = await _connectIfNeeded();
     isLoading = false;
     notifyListeners();
+    return ok;
   }
 
-  Future<void> deleteCredentialByModel(Credential credential) async {
-    await deleteCredential(credential.userId);
+  Future<String> _awaitPin() {
+    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
+      return _pinCompleter!.future;
+    }
+    pinRequired = true;
+    notifyListeners();
+    _pinCompleter = Completer<String>();
+    return _pinCompleter!.future;
+  }
+
+  Future<bool> _runWithPinLoop<T>(
+    Future<Result<T, Failure>> Function() op, {
+    void Function(T value)? onSuccess,
+  }) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    while (true) {
+      final connected = await _connectIfNeeded();
+      if (!connected) {
+        if (errorMessage != null && !pinRequired) {
+          isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        await _awaitPin();
+        continue;
+      }
+      final res = await op();
+      if (res is Ok<T, Failure>) {
+        onSuccess?.call(res.value);
+        isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        final failure = (res as Err<T, Failure>).error;
+        if (failure is PinRequiredFailure) {
+          _pin = null;
+          _isConnected = false;
+          await _awaitPin();
+          continue;
+        }
+        errorMessage = failure.message;
+        if (failure is ConnectionFailure) _isConnected = false;
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    }
   }
 }
