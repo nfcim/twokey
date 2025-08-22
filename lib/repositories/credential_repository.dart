@@ -163,12 +163,28 @@ class CredentialRepository {
       }
 
       final List<Credential> allCredentials = [];
-      final rps = await _credMgmtClient!.enumerateRPs();
+      late final List rps; // dynamic list; library types hidden
+      try {
+        rps = await _credMgmtClient!.enumerateRPs();
+      } on CtapError catch (ce) {
+        if (ce.status == CtapStatusCode.ctap2ErrNoCredentials) {
+          AppLogger.info('No credentials present on authenticator (RP list).');
+          return const Ok(<Credential>[]);
+        }
+        rethrow;
+      }
       for (var rp in rps) {
-        final credentials = await _credMgmtClient!.enumerateCredentials(
-          rp.rpIdHash,
-        );
-        for (var cred in credentials) {
+        late final List creds; // dynamic list of credential entries
+        try {
+          creds = await _credMgmtClient!.enumerateCredentials(rp.rpIdHash);
+        } on CtapError catch (ce) {
+          if (ce.status == CtapStatusCode.ctap2ErrNoCredentials) {
+            AppLogger.info('No credentials for RP ${rp.rp.id}. Skipping.');
+            continue; // move to next RP
+          }
+          rethrow;
+        }
+        for (var cred in creds) {
           allCredentials.add(
             Credential(
               rpId: rp.rp.id,

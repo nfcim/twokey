@@ -129,15 +129,12 @@ class _KeysPageState extends State<KeysPage> {
                           final ok = await vm.fetchCredentials();
                           if (!ok) return; // waiting for PIN / failure
                           if (!context.mounted) return;
-                          if (vm.credentials.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const CredentialListPage(),
-                              ),
-                            );
-                          }
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CredentialListPage(),
+                            ),
+                          );
                         },
                   child: const Text('List Credentials'),
                 ),
