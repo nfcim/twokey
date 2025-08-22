@@ -4,11 +4,10 @@ import 'package:fauth/models/credential.dart';
 import 'package:fido2/fido2.dart';
 import 'dart:typed_data';
 
-import 'package:logger/logger.dart';
+import 'package:fauth/core/logging/app_logger.dart';
 
 class _ApiCtapDevice extends CtapDevice {
   final Future<Uint8List> Function(Uint8List) _transceive;
-  final _logger = Logger(printer: SimplePrinter());
 
   _ApiCtapDevice(this._transceive);
 
@@ -24,10 +23,10 @@ class _ApiCtapDevice extends CtapDevice {
       0x00,
     ];
     final commandBytes = Uint8List.fromList(apduCommand);
-    _logger.d('--> APDU Command (hex): ${hex.encode(commandBytes)}');
+    AppLogger.debug('--> APDU Command (hex): ${hex.encode(commandBytes)}');
 
     return _transceive(commandBytes).then((responseBytes) {
-      _logger.d('<-- APDU Response (hex): ${hex.encode(responseBytes)}');
+      AppLogger.debug('<-- APDU Response (hex): ${hex.encode(responseBytes)}');
 
       if (responseBytes.length < 2) {
         throw Exception('APDU response is too short.');
@@ -49,7 +48,7 @@ class _ApiCtapDevice extends CtapDevice {
 
       final ctapStatus = ctapPayload[0];
       final cborData = ctapPayload.sublist(1);
-      _logger.d(
+      AppLogger.debug(
         '<-- CTAP Status: 0x${ctapStatus.toRadixString(16)}, CBOR Length: ${cborData.length}',
       );
       return CtapResponse(ctapStatus, cborData);
@@ -61,7 +60,7 @@ class CredentialRepository {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
   CredentialManagement? _credMgmtClient;
-  final _logger = Logger(printer: SimplePrinter());
+  // Central logging
 
   CredentialRepository(this._fidoApi);
 
@@ -153,16 +152,18 @@ class CredentialRepository {
         for (final cred in creds) {
           final candidateUserId = String.fromCharCodes(cred.user.id);
           if (candidateUserId == userId) {
-            _logger.i('Deleting credential userId=$userId rpId=${rp.rp.id}');
+            AppLogger.info(
+              'Deleting credential userId=$userId rpId=${rp.rp.id}',
+            );
             await _credMgmtClient!.deleteCredential(cred.credentialId);
-            _logger.i('Deleted credential userId=$userId');
+            AppLogger.info('Deleted credential userId=$userId');
             return;
           }
         }
       }
       throw Exception('Credential not found for userId: $userId');
     } catch (e) {
-      _logger.e('Failed to delete credential: $e');
+      AppLogger.error('Failed to delete credential', e);
       rethrow;
     }
   }
