@@ -59,36 +59,14 @@ class _ApiCtapDevice extends CtapDevice {
 class CredentialRepository {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
-  CredentialManagement? _credMgmtClient;
 
   CredentialRepository(this._fidoApi);
 
-  Future<void> connect({String pin = ''}) async {
+  Future<void> connect() async {
     try {
       await _fidoApi.connect();
       final device = _ApiCtapDevice(_fidoApi.transceive);
       _ctap2Client = await Ctap2.create(device);
-
-      if (CredentialManagement.isSupported(_ctap2Client!.info)) {
-        PinProtocol pinProtocol;
-        final protocols = _ctap2Client!.info.pinUvAuthProtocols;
-        if (protocols != null && protocols.contains(2)) {
-          pinProtocol = PinProtocolV2();
-        } else {
-          pinProtocol = PinProtocolV1();
-        }
-
-        final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
-        final pinToken = await clientPin.getPinToken(
-          pin,
-          permissions: [ClientPinPermission.credentialManagement],
-        );
-        _credMgmtClient = CredentialManagement(
-          _ctap2Client!,
-          pinProtocol,
-          pinToken,
-        );
-      }
     } catch (e, st) {
       AppLogger.error('Connect failed: $e', e, st);
       rethrow;
@@ -100,7 +78,6 @@ class CredentialRepository {
       await _fidoApi.disconnect();
     } finally {
       _ctap2Client = null;
-      _credMgmtClient = null;
     }
   }
 
@@ -116,21 +93,37 @@ class CredentialRepository {
     }
   }
 
-  Future<List<Credential>> getCredentials() async {
+  Future<List<Credential>> getCredentials(String pin) async {
     try {
-      if (_credMgmtClient == null) {
-        if (_ctap2Client == null) {
-          throw Exception('Not connected. Call connect() first.');
-        }
+      if (_ctap2Client == null) {
+        throw Exception('Not connected. Call connect() first.');
+      }
+      if (!CredentialManagement.isSupported(_ctap2Client!.info)) {
         throw Exception(
           'This authenticator does not support credential management.',
         );
       }
 
+      // Create a fresh CredentialManagement client for this operation using the provided PIN
+      final PinProtocol pinProtocol =
+          (_ctap2Client!.info.pinUvAuthProtocols?.contains(2) ?? false)
+          ? PinProtocolV2()
+          : PinProtocolV1();
+      final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
+      final pinToken = await clientPin.getPinToken(
+        pin,
+        permissions: [ClientPinPermission.credentialManagement],
+      );
+      final credMgmtClient = CredentialManagement(
+        _ctap2Client!,
+        pinProtocol,
+        pinToken,
+      );
+
       final List<Credential> allCredentials = [];
       late final List rps; // dynamic list; library types hidden
       try {
-        rps = await _credMgmtClient!.enumerateRPs();
+        rps = await credMgmtClient.enumerateRPs();
       } on CtapError catch (ce) {
         if (ce.status == CtapStatusCode.ctap2ErrNoCredentials) {
           AppLogger.info('No credentials present on authenticator (RP list).');
@@ -141,7 +134,7 @@ class CredentialRepository {
       for (var rp in rps) {
         late final List creds; // dynamic list of credential entries
         try {
-          creds = await _credMgmtClient!.enumerateCredentials(rp.rpIdHash);
+          creds = await credMgmtClient.enumerateCredentials(rp.rpIdHash);
         } on CtapError catch (ce) {
           if (ce.status == CtapStatusCode.ctap2ErrNoCredentials) {
             AppLogger.info('No credentials for RP ${rp.rp.id}. Skipping.');
@@ -166,27 +159,43 @@ class CredentialRepository {
     }
   }
 
-  Future<void> deleteCredential(String userId) async {
+  Future<void> deleteCredential(String userId, String pin) async {
     try {
-      if (_credMgmtClient == null) {
-        if (_ctap2Client == null) {
-          throw Exception('Not connected. Call connect() first.');
-        }
+      if (_ctap2Client == null) {
+        throw Exception('Not connected. Call connect() first.');
+      }
+      if (!CredentialManagement.isSupported(_ctap2Client!.info)) {
         throw Exception(
           'This authenticator does not support credential management.',
         );
       }
 
-      final rps = await _credMgmtClient!.enumerateRPs();
+      // Fresh CredentialManagement per operation using the provided PIN
+      final PinProtocol pinProtocol =
+          (_ctap2Client!.info.pinUvAuthProtocols?.contains(2) ?? false)
+          ? PinProtocolV2()
+          : PinProtocolV1();
+      final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
+      final pinToken = await clientPin.getPinToken(
+        pin,
+        permissions: [ClientPinPermission.credentialManagement],
+      );
+      final credMgmtClient = CredentialManagement(
+        _ctap2Client!,
+        pinProtocol,
+        pinToken,
+      );
+
+      final rps = await credMgmtClient.enumerateRPs();
       for (final rp in rps) {
-        final creds = await _credMgmtClient!.enumerateCredentials(rp.rpIdHash);
+        final creds = await credMgmtClient.enumerateCredentials(rp.rpIdHash);
         for (final cred in creds) {
           final candidateUserId = String.fromCharCodes(cred.user.id);
           if (candidateUserId == userId) {
             AppLogger.info(
               'Deleting credential userId=$userId rpId=${rp.rp.id}',
             );
-            await _credMgmtClient!.deleteCredential(cred.credentialId);
+            await credMgmtClient.deleteCredential(cred.credentialId);
             AppLogger.info('Deleted credential userId=$userId');
             return;
           }
