@@ -4,9 +4,7 @@ import 'package:fauth/models/credential.dart';
 import 'package:fido2/fido2.dart';
 import 'dart:typed_data';
 
-import 'package:fauth/core/logging/app_logger.dart';
-import 'package:fauth/core/result/result.dart';
-import 'package:fauth/core/error/failure.dart';
+import 'package:fauth/common/app_logger.dart';
 
 class _ApiCtapDevice extends CtapDevice {
   final Future<Uint8List> Function(Uint8List) _transceive;
@@ -65,33 +63,7 @@ class CredentialRepository {
 
   CredentialRepository(this._fidoApi);
 
-  Failure _failureFrom(Object e, StackTrace st) {
-    final msg = e.toString();
-    if (e is CtapError) {
-      // 0x33 = ctap2ErrPinAuthInvalid -> treat as needing fresh PIN entry
-      if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
-        return PinRequiredFailure(cause: e, stackTrace: st);
-      }
-    }
-    if (msg.contains('No reader')) {
-      return DeviceNotFoundFailure(cause: e, stackTrace: st);
-    }
-    if (msg.contains('not support credential management')) {
-      return const UnsupportedFailure('credential management');
-    }
-    if (msg.contains('PIN')) {
-      return PinRequiredFailure(cause: e, stackTrace: st);
-    }
-    if (msg.contains('Not connected')) {
-      return ConnectionFailure(msg, cause: e, stackTrace: st);
-    }
-    if (msg.contains('Credential not found')) {
-      return OperationFailure(msg, cause: e, stackTrace: st);
-    }
-    return UnknownFailure(cause: e, stackTrace: st);
-  }
-
-  Future<Result<void, Failure>> connect({String pin = ''}) async {
+  Future<void> connect({String pin = ''}) async {
     try {
       await _fidoApi.connect();
       final device = _ApiCtapDevice(_fidoApi.transceive);
@@ -117,11 +89,9 @@ class CredentialRepository {
           pinToken,
         );
       }
-      return const Ok(null);
     } catch (e, st) {
-      final failure = _failureFrom(e, st);
-      AppLogger.error('Connect failed: ${failure.message}', e, st);
-      return Err(failure);
+      AppLogger.error('Connect failed: $e', e, st);
+      rethrow;
     }
   }
 
@@ -134,24 +104,19 @@ class CredentialRepository {
     }
   }
 
-  Future<Result<AuthenticatorInfo, Failure>> getAuthenticatorInfo() async {
+  Future<AuthenticatorInfo> getAuthenticatorInfo() async {
     try {
       if (_ctap2Client == null) {
         throw Exception('Not connected. Call connect() first.');
       }
-      return Ok(_ctap2Client!.info);
+      return _ctap2Client!.info;
     } catch (e, st) {
-      final failure = _failureFrom(e, st);
-      AppLogger.error(
-        'Get authenticator info failed: ${failure.message}',
-        e,
-        st,
-      );
-      return Err(failure);
+      AppLogger.error('Get authenticator info failed: $e', e, st);
+      rethrow;
     }
   }
 
-  Future<Result<List<Credential>, Failure>> getCredentials() async {
+  Future<List<Credential>> getCredentials() async {
     try {
       if (_credMgmtClient == null) {
         if (_ctap2Client == null) {
@@ -169,7 +134,7 @@ class CredentialRepository {
       } on CtapError catch (ce) {
         if (ce.status == CtapStatusCode.ctap2ErrNoCredentials) {
           AppLogger.info('No credentials present on authenticator (RP list).');
-          return const Ok(<Credential>[]);
+          return const <Credential>[];
         }
         rethrow;
       }
@@ -194,15 +159,14 @@ class CredentialRepository {
           );
         }
       }
-      return Ok(allCredentials);
+      return allCredentials;
     } catch (e, st) {
-      final failure = _failureFrom(e, st);
-      AppLogger.error('Get credentials failed: ${failure.message}', e, st);
-      return Err(failure);
+      AppLogger.error('Get credentials failed: $e', e, st);
+      rethrow;
     }
   }
 
-  Future<Result<void, Failure>> deleteCredential(String userId) async {
+  Future<void> deleteCredential(String userId) async {
     try {
       if (_credMgmtClient == null) {
         if (_ctap2Client == null) {
@@ -224,15 +188,14 @@ class CredentialRepository {
             );
             await _credMgmtClient!.deleteCredential(cred.credentialId);
             AppLogger.info('Deleted credential userId=$userId');
-            return const Ok(null);
+            return;
           }
         }
       }
       throw Exception('Credential not found for userId: $userId');
     } catch (e, st) {
-      final failure = _failureFrom(e, st);
-      AppLogger.error('Delete credential failed: ${failure.message}', e, st);
-      return Err(failure);
+      AppLogger.error('Delete credential failed: $e', e, st);
+      rethrow;
     }
   }
 }

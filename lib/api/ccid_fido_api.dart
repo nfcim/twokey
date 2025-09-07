@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:ccid/ccid.dart';
 import 'package:fauth/api/fido_api.dart';
-import 'package:fauth/core/logging/app_logger.dart';
+import 'package:fauth/common/app_logger.dart';
 
 class CcidFidoApi implements FidoApi {
   CcidCard? _card;

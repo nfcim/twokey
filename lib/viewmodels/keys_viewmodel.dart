@@ -3,8 +3,6 @@ import 'package:fauth/models/credential.dart';
 import 'package:fauth/repositories/credential_repository.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
-import 'package:fauth/core/result/result.dart';
-import 'package:fauth/core/error/failure.dart';
 
 class KeysViewModel extends ChangeNotifier {
   final CredentialRepository _repository;
@@ -26,20 +24,21 @@ class KeysViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<bool> fetchCredentials() async => _runWithPinLoop<List<Credential>>(
-    () => _repository.getCredentials(),
-    onSuccess: (data) => credentials = data,
-  );
+  Future<bool> fetchCredentials() async =>
+      _runWithPinLoopValue<List<Credential>>(
+        () => _repository.getCredentials(),
+        onSuccess: (data) => credentials = data,
+      );
 
   Future<bool> fetchAuthenticatorInfo() async =>
-      _runWithPinLoop<AuthenticatorInfo>(
+      _runWithPinLoopValue<AuthenticatorInfo>(
         () => _repository.getAuthenticatorInfo(),
         onSuccess: (info) => authenticatorInfo = info,
       );
 
-  Future<bool> deleteCredential(String userId) async => _runWithPinLoop<void>(
+  Future<bool> deleteCredential(String userId) async => _runWithPinLoopVoid(
     () => _repository.deleteCredential(userId),
-    onSuccess: (_) {
+    onSuccess: () {
       credentials.removeWhere((c) => c.userId == userId);
     },
   );
@@ -53,20 +52,24 @@ class KeysViewModel extends ChangeNotifier {
     while (_pin == null) {
       await _awaitPin();
     }
-    final res = await _repository.connect(pin: _pin!);
-    if (res is Ok) {
+    try {
+      await _repository.connect(pin: _pin!);
       _isConnected = true;
       pinRequired = false;
       return true;
+    } on CtapError catch (e) {
+      // Treat invalid PIN as retryable
+      if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
+        _pin = null;
+        _isConnected = false;
+        return _connectIfNeeded();
+      }
+      errorMessage = e.toString();
+      return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
     }
-    final failure = (res as Err).error;
-    if (failure is PinRequiredFailure) {
-      _pin = null; // force ask again
-      _isConnected = false;
-      return _connectIfNeeded();
-    }
-    errorMessage = failure.message;
-    return false;
   }
 
   Future<void> submitPin(String pin) async {
@@ -101,8 +104,8 @@ class KeysViewModel extends ChangeNotifier {
     return _pinCompleter!.future;
   }
 
-  Future<bool> _runWithPinLoop<T>(
-    Future<Result<T, Failure>> Function() op, {
+  Future<bool> _runWithPinLoopValue<T>(
+    Future<T> Function() op, {
     void Function(T value)? onSuccess,
   }) async {
     isLoading = true;
@@ -119,22 +122,70 @@ class KeysViewModel extends ChangeNotifier {
         await _awaitPin();
         continue;
       }
-      final res = await op();
-      if (res is Ok<T, Failure>) {
-        onSuccess?.call(res.value);
+      try {
+        final value = await op();
+        onSuccess?.call(value);
         isLoading = false;
         notifyListeners();
         return true;
-      } else {
-        final failure = (res as Err<T, Failure>).error;
-        if (failure is PinRequiredFailure) {
+      } on CtapError catch (e) {
+        if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
           _pin = null;
           _isConnected = false;
           await _awaitPin();
           continue;
         }
-        errorMessage = failure.message;
-        if (failure is ConnectionFailure) _isConnected = false;
+        errorMessage = e.toString();
+        // If connection-level issue, mark disconnected on generic catch below if needed
+        isLoading = false;
+        notifyListeners();
+        return false;
+      } catch (e) {
+        errorMessage = e.toString();
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    }
+  }
+
+  Future<bool> _runWithPinLoopVoid(
+    Future<void> Function() op, {
+    void Function()? onSuccess,
+  }) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    while (true) {
+      final connected = await _connectIfNeeded();
+      if (!connected) {
+        if (errorMessage != null && !pinRequired) {
+          isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        await _awaitPin();
+        continue;
+      }
+      try {
+        await op();
+        onSuccess?.call();
+        isLoading = false;
+        notifyListeners();
+        return true;
+      } on CtapError catch (e) {
+        if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
+          _pin = null;
+          _isConnected = false;
+          await _awaitPin();
+          continue;
+        }
+        errorMessage = e.toString();
+        isLoading = false;
+        notifyListeners();
+        return false;
+      } catch (e) {
+        errorMessage = e.toString();
         isLoading = false;
         notifyListeners();
         return false;
