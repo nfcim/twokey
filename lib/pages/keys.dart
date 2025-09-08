@@ -138,6 +138,45 @@ class _KeysPageState extends State<KeysPage> {
                         },
                   child: const Text('List Credentials'),
                 ),
+                const SizedBox(height: 16),
+                // Test registration and verification (server in-app)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: vm.isLoading
+                          ? null
+                          : () async {
+                              await vm.testRegister(
+                                username: 'test-user',
+                                displayName: 'Test User',
+                              );
+                            },
+                      child: const Text('Test Register'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: vm.isLoading
+                          ? null
+                          : () async {
+                              await vm.testVerify();
+                            },
+                      child: const Text('Test Verify'),
+                    ),
+                  ],
+                ),
+                if (vm.testResult != null)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: 12.0,
+                      left: 24,
+                      right: 24,
+                    ),
+                    child: SelectableText(
+                      vm.testResult!,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
               ],
             ),
           ),

@@ -11,6 +11,7 @@ class KeysViewModel extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
   bool pinRequired = false; // signal UI to request PIN
+  String? testResult; // registration / verification result text
 
   bool _isConnected = false;
   Completer<String>? _pinCompleter; // waits for user PIN entry
@@ -45,6 +46,23 @@ class KeysViewModel extends ChangeNotifier {
 
   Future<bool> deleteCredentialByModel(Credential credential) async =>
       deleteCredential(credential.userId);
+
+  Future<bool> testRegister({
+    required String username,
+    required String displayName,
+  }) async => _runWithPinPerOperation<String>(
+    (pin) => _repository.testRegister(
+      username: username,
+      displayName: displayName,
+      pin: pin,
+    ),
+    onSuccess: (msg) => testResult = msg,
+  );
+
+  Future<bool> testVerify() async => _runWithPinPerOperation<String>(
+    (pin) => _repository.testVerify(pin: pin),
+    onSuccess: (msg) => testResult = msg,
+  );
 
   // --- Internal helpers (loop + PIN) ---
   Future<bool> _connectIfNeeded() async {

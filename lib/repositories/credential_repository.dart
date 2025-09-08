@@ -3,7 +3,10 @@ import 'package:fauth/api/fido_api.dart';
 import 'package:fauth/models/credential.dart';
 import 'package:fido2/fido2.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 
+import 'package:cbor/cbor.dart' as cbor;
+import 'package:crypto/crypto.dart';
 import 'package:fauth/common/app_logger.dart';
 
 class _ApiCtapDevice extends CtapDevice {
@@ -25,29 +28,78 @@ class _ApiCtapDevice extends CtapDevice {
     final commandBytes = Uint8List.fromList(apduCommand);
     AppLogger.debug('--> APDU Command (hex): ${hex.encode(commandBytes)}');
 
-    return _transceive(commandBytes).then((responseBytes) {
-      AppLogger.debug('<-- APDU Response (hex): ${hex.encode(responseBytes)}');
+    return _transceive(commandBytes).then((firstResponse) async {
+      AppLogger.debug('<-- APDU Response (hex): ${hex.encode(firstResponse)}');
 
-      if (responseBytes.length < 2) {
+      if (firstResponse.length < 2) {
         throw Exception('APDU response is too short.');
       }
-      final sw1 = responseBytes[responseBytes.length - 2];
-      final sw2 = responseBytes[responseBytes.length - 1];
-      final apduStatus = (sw1 << 8) | sw2;
 
-      if (apduStatus != 0x9000) {
+      // Accumulate response data across GET RESPONSE loops when SW=0x61xx
+      final fullData = <int>[];
+      var resp = firstResponse;
+      while (true) {
+        final sw1 = resp[resp.length - 2];
+        final sw2 = resp[resp.length - 1];
+        final apduStatus = (sw1 << 8) | sw2;
+
+        // Append data portion from this APDU
+        if (resp.length > 2) {
+          fullData.addAll(resp.sublist(0, resp.length - 2));
+        }
+
+        if (apduStatus == 0x9000) {
+          break; // complete
+        }
+
+        if (sw1 == 0x61) {
+          // More data available; issue GET RESPONSE
+          var le = sw2;
+          if (le == 0x00) {
+            le = 0x100; // 256 bytes when Le=0
+          }
+          final getResponse = Uint8List.fromList([
+            0x00,
+            0xC0,
+            0x00,
+            0x00,
+            le & 0xFF,
+          ]);
+          AppLogger.debug('--> GET RESPONSE Le=$le');
+          resp = await _transceive(getResponse);
+          AppLogger.debug('<-- GET RESPONSE (hex): ${hex.encode(resp)}');
+          continue;
+        }
+
+        if (sw1 == 0x6C) {
+          // Wrong length, retry GET RESPONSE with exact length
+          final le = sw2;
+          final getResponse = Uint8List.fromList([
+            0x00,
+            0xC0,
+            0x00,
+            0x00,
+            le & 0xFF,
+          ]);
+          AppLogger.debug('--> GET RESPONSE (retry) Le=$le');
+          resp = await _transceive(getResponse);
+          AppLogger.debug(
+            '<-- GET RESPONSE (retry) (hex): ${hex.encode(resp)}',
+          );
+          continue;
+        }
+
+        // Any other status is an error
         throw Exception(
           'APDU command failed with status: 0x${apduStatus.toRadixString(16)}',
         );
       }
 
-      final ctapPayload = responseBytes.sublist(0, responseBytes.length - 2);
-      if (ctapPayload.isEmpty) {
+      if (fullData.isEmpty) {
         return CtapResponse(0x00, []);
       }
-
-      final ctapStatus = ctapPayload[0];
-      final cborData = ctapPayload.sublist(1);
+      final ctapStatus = fullData[0];
+      final cborData = fullData.sublist(1);
       AppLogger.debug(
         '<-- CTAP Status: 0x${ctapStatus.toRadixString(16)}, CBOR Length: ${cborData.length}',
       );
@@ -59,6 +111,17 @@ class _ApiCtapDevice extends CtapDevice {
 class CredentialRepository {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
+
+  // Simple in-memory storage for a test credential (registration + verification)
+  // These are only for demonstration/testing purposes.
+  final String _rpId = 'localhost';
+  final String _rpName = 'Fauth Test';
+  late final Fido2Server _server = Fido2Server(
+    Fido2Config(rpId: _rpId, rpName: _rpName),
+  );
+  Uint8List? _testCredentialId;
+  cbor.CborMap? _testCredentialPublicKey;
+  int _testSignCount = 0;
 
   CredentialRepository(this._fidoApi);
 
@@ -204,6 +267,185 @@ class CredentialRepository {
       throw Exception('Credential not found for userId: $userId');
     } catch (e, st) {
       AppLogger.error('Delete credential failed: $e', e, st);
+      rethrow;
+    }
+  }
+
+  // --- Test flows: registration and verification ---
+  Future<String> testRegister({
+    required String username,
+    required String displayName,
+    required String pin,
+  }) async {
+    try {
+      if (_ctap2Client == null) {
+        throw Exception('Not connected. Call connect() first.');
+      }
+
+      // 1) Server options
+      final regOptions = _server.generateRegistrationOptions(
+        username,
+        displayName,
+      );
+      final String challengeB64 = regOptions['challenge'] as String;
+
+      // 2) clientDataJSON and hash
+      final clientDataJson = jsonEncode({
+        'type': 'webauthn.create',
+        'challenge': challengeB64,
+        'origin': 'https://$_rpId',
+      });
+      final clientDataHash = sha256.convert(utf8.encode(clientDataJson)).bytes;
+
+      // 3) Prepare PIN/UV
+      final PinProtocol pinProtocol =
+          (_ctap2Client!.info.pinUvAuthProtocols?.contains(2) ?? false)
+          ? PinProtocolV2()
+          : PinProtocolV1();
+      final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
+      final pinToken = await clientPin.getPinToken(
+        pin,
+        permissions: [ClientPinPermission.makeCredential],
+        permissionsRpId: _rpId,
+      );
+      final pinAuth = await pinProtocol.authenticate(pinToken, clientDataHash);
+
+      // 4) Build makeCredential request
+      final rp = PublicKeyCredentialRpEntity(id: _rpId);
+      final user = PublicKeyCredentialUserEntity(
+        id: utf8.encode(username),
+        name: username,
+        displayName: displayName,
+      );
+      final pubKeyCredParams = [
+        {'type': 'public-key', 'alg': -7}, // ES256
+        {'type': 'public-key', 'alg': -8}, // EdDSA
+      ];
+      final req = MakeCredentialRequest(
+        clientDataHash: clientDataHash,
+        rp: rp,
+        user: user,
+        pubKeyCredParams: pubKeyCredParams,
+        options: {'rk': true, 'up': true},
+        pinAuth: pinAuth,
+        pinProtocol: pinProtocol.version,
+      );
+
+      final res = await _ctap2Client!.device.transceive(req.encode());
+      if (res.status != 0) {
+        throw CtapError.fromCode(res.status);
+      }
+      final makeCred = MakeCredentialResponse.decode(res.data);
+
+      // 5) Build attestationObject (CBOR Map) with proper CBOR types and let server verify
+      final attestationMap = cbor.CborMap.fromEntries([
+        MapEntry(cbor.CborString('fmt'), cbor.CborString(makeCred.fmt)),
+        MapEntry(
+          cbor.CborString('authData'),
+          cbor.CborBytes(makeCred.authData),
+        ),
+        MapEntry(cbor.CborString('attStmt'), cbor.CborValue(makeCred.attStmt)),
+      ]);
+      final attestationBytes = cbor.cbor.encode(attestationMap);
+      final clientDataB64 = base64Url.encode(utf8.encode(clientDataJson));
+      final attestationB64 = base64Url.encode(attestationBytes);
+      final registration = _server.completeRegistration(
+        clientDataB64,
+        attestationB64,
+        challengeB64,
+      );
+
+      // Persist in-memory for test verification
+      _testCredentialId = registration.credentialId;
+      _testCredentialPublicKey = registration.credentialPublicKey;
+      _testSignCount = 0; // start from 0; will be updated after first assertion
+
+      return 'Registration OK\ncredId=${hex.encode(_testCredentialId!)}\nalg set';
+    } catch (e, st) {
+      AppLogger.error('Test registration failed: $e', e, st);
+      rethrow;
+    }
+  }
+
+  Future<String> testVerify({required String pin}) async {
+    try {
+      if (_ctap2Client == null) {
+        throw Exception('Not connected. Call connect() first.');
+      }
+      if (_testCredentialId == null || _testCredentialPublicKey == null) {
+        throw Exception('No test credential registered yet.');
+      }
+
+      // 1) Server options
+      final verOptions = _server.generateVerificationOptions();
+      final String challengeB64 = verOptions['challenge'] as String;
+
+      // 2) clientDataJSON and hash
+      final clientDataJson = jsonEncode({
+        'type': 'webauthn.get',
+        'challenge': challengeB64,
+        'origin': 'https://$_rpId',
+      });
+      final clientDataHash = sha256.convert(utf8.encode(clientDataJson)).bytes;
+
+      // 3) Prepare PIN/UV
+      final PinProtocol pinProtocol =
+          (_ctap2Client!.info.pinUvAuthProtocols?.contains(2) ?? false)
+          ? PinProtocolV2()
+          : PinProtocolV1();
+      final clientPin = ClientPin(_ctap2Client!, pinProtocol: pinProtocol);
+      final pinToken = await clientPin.getPinToken(
+        pin,
+        permissions: [ClientPinPermission.getAssertion],
+        permissionsRpId: _rpId,
+      );
+      final pinAuth = await pinProtocol.authenticate(pinToken, clientDataHash);
+
+      // 4) Build getAssertion request (allowList constrains to our test credential)
+      final allow = [
+        PublicKeyCredentialDescriptor(
+          type: 'public-key',
+          id: _testCredentialId!.toList(),
+        ),
+      ];
+      final req = GetAssertionRequest(
+        rpId: _rpId,
+        clientDataHash: clientDataHash,
+        allowList: allow,
+        options: {'up': true, 'uv': true},
+        pinAuth: pinAuth,
+        pinProtocol: pinProtocol.version,
+      );
+
+      final res = await _ctap2Client!.device.transceive(req.encode());
+      if (res.status != 0) {
+        throw CtapError.fromCode(res.status);
+      }
+      final assertion = GetAssertionResponse.decode(res.data);
+
+      // 5) Server-side verification
+      final clientDataB64 = base64Url.encode(utf8.encode(clientDataJson));
+      final authDataB64 = base64Url.encode(
+        Uint8List.fromList(assertion.authData),
+      );
+      final signatureB64 = base64Url.encode(
+        Uint8List.fromList(assertion.signature),
+      );
+
+      final verification = await _server.completeVerification(
+        clientDataB64,
+        authDataB64,
+        signatureB64,
+        challengeB64,
+        _testCredentialPublicKey!,
+        _testSignCount,
+      );
+
+      _testSignCount = verification.signCount;
+
+      return 'Assertion OK\nuserPresent=${verification.userPresent}\nsignCount=${verification.signCount}';
+    } catch (e, st) {
+      AppLogger.error('Test verification failed: $e', e, st);
       rethrow;
     }
   }
