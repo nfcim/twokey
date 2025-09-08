@@ -93,6 +93,11 @@ class _KeysPageState extends State<KeysPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (vm.isLoading) const CircularProgressIndicator(),
+                if (vm.waitingForTouch)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: Text('请触摸密钥以继续…', style: TextStyle(fontSize: 12)),
+                  ),
                 if (vm.authenticatorInfo != null)
                   Padding(
                     padding: const EdgeInsets.all(8.0),

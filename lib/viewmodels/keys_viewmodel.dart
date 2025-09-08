@@ -12,6 +12,7 @@ class KeysViewModel extends ChangeNotifier {
   String? errorMessage;
   bool pinRequired = false; // signal UI to request PIN
   String? testResult; // registration / verification result text
+  bool waitingForTouch = false;
 
   bool _isConnected = false;
   Completer<String>? _pinCompleter; // waits for user PIN entry
@@ -55,12 +56,22 @@ class KeysViewModel extends ChangeNotifier {
       username: username,
       displayName: displayName,
       pin: pin,
+      onUserPresence: (w) {
+        waitingForTouch = w;
+        notifyListeners();
+      },
     ),
     onSuccess: (msg) => testResult = msg,
   );
 
   Future<bool> testVerify() async => _runWithPinPerOperation<String>(
-    (pin) => _repository.testVerify(pin: pin),
+    (pin) => _repository.testVerify(
+      pin: pin,
+      onUserPresence: (w) {
+        waitingForTouch = w;
+        notifyListeners();
+      },
+    ),
     onSuccess: (msg) => testResult = msg,
   );
 

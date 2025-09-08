@@ -276,6 +276,7 @@ class CredentialRepository {
     required String username,
     required String displayName,
     required String pin,
+    void Function(bool waiting)? onUserPresence,
   }) async {
     try {
       if (_ctap2Client == null) {
@@ -331,7 +332,13 @@ class CredentialRepository {
         pinProtocol: pinProtocol.version,
       );
 
-      final res = await _ctap2Client!.device.transceive(req.encode());
+      onUserPresence?.call(true);
+      final CtapResponse<List<int>> res;
+      try {
+        res = await _ctap2Client!.device.transceive(req.encode());
+      } finally {
+        onUserPresence?.call(false);
+      }
       if (res.status != 0) {
         throw CtapError.fromCode(res.status);
       }
@@ -367,7 +374,10 @@ class CredentialRepository {
     }
   }
 
-  Future<String> testVerify({required String pin}) async {
+  Future<String> testVerify({
+    required String pin,
+    void Function(bool waiting)? onUserPresence,
+  }) async {
     try {
       if (_ctap2Client == null) {
         throw Exception('Not connected. Call connect() first.');
@@ -417,7 +427,13 @@ class CredentialRepository {
         pinProtocol: pinProtocol.version,
       );
 
-      final res = await _ctap2Client!.device.transceive(req.encode());
+      onUserPresence?.call(true);
+      final CtapResponse<List<int>> res;
+      try {
+        res = await _ctap2Client!.device.transceive(req.encode());
+      } finally {
+        onUserPresence?.call(false);
+      }
       if (res.status != 0) {
         throw CtapError.fromCode(res.status);
       }
