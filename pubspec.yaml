@@ -13,7 +13,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   window_manager: ^0.5.1
   flutter_nfc_kit: ^3.6.0
-  fido2: ^1.0.0
+  fido2:
+    # ^1.0.0
+    path: /mnt/Documents/Code/fido2
   provider: ^6.1.5
   ccid: ^0.1.8
   convert: ^3.1.2
