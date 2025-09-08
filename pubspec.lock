@@ -26,7 +26,7 @@ packages:
     source: hosted
     version: "2.1.2"
   cbor:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: cbor
       sha256: f5239dd6b6ad24df67d1449e87d7180727d6f43b87b3c9402e6398c7a2d9609b
@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "3.1.2"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: "1e445881f28f22d6140f181e07737b22f1e099a5e1ff94b0af2f9e4a463f4855"
