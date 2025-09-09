@@ -1,4 +1,4 @@
-import 'package:fauth/pages/keys.dart';
+import 'package:fauth/pages/keys/keys_page.dart';
 import 'package:fauth/pages/settings.dart';
 import 'package:fauth/viewmodels/navigation_viewmodel.dart';
 import 'package:fauth/widgets/adaptive_scaffold.dart';
