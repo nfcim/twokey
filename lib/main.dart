@@ -34,7 +34,10 @@ void main() {
           create: (_) => KeysViewModel(CredentialRepository(CcidFidoApi())),
         ),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
-        ChangeNotifierProvider(create: (_) => LogViewModel(AppLogger.stream)),
+        ChangeNotifierProvider(
+          lazy: false,
+          create: (_) => LogViewModel(AppLogger.stream),
+        ),
       ],
       child: const MyApp(),
     ),
