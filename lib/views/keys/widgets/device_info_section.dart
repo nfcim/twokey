@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:provider/provider.dart';
-import 'kv_row.dart';
+import '../../../widgets/kv_row.dart';
 import 'package:fauth/widgets/card.dart';
 
 class DeviceInfoSection extends StatelessWidget {

@@ -1,4 +1,4 @@
-import 'package:fauth/views/logger/models/log_viewmodel.dart';
+import 'package:fauth/viewmodels/log_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
