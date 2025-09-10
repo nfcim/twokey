@@ -25,7 +25,9 @@ class _KeysSnackbarListenerState extends State<KeysSnackbarListener> {
         _wasWaitingForTouch = true;
         messenger.showSnackBar(
           const SnackBar(
-            content: Text('请在安全密钥上完成验证（如按下指纹/触摸按键）'),
+            content: Text(
+              'Please complete verification on your security key (e.g. touch or fingerprint)',
+            ),
             behavior: SnackBarBehavior.floating,
             duration: Duration(days: 1),
           ),
@@ -41,7 +43,7 @@ class _KeysSnackbarListenerState extends State<KeysSnackbarListener> {
         _lastErrorShown = vm.errorMessage;
         messenger.showSnackBar(
           SnackBar(
-            content: Text('错误：${vm.errorMessage}'),
+            content: Text('${vm.errorMessage}'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
           ),

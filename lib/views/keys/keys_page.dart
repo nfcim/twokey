@@ -72,11 +72,11 @@ class _KeysPageState extends State<KeysPage> {
               Navigator.of(context).pop();
               _pinDialogOpen = false;
             },
-            child: const Text('取消'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => _submitPin(vm),
-            child: const Text('确认'),
+            child: const Text('Confirm'),
           ),
         ],
       ),

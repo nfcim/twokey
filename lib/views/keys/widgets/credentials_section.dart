@@ -86,12 +86,14 @@ class _CredentialTile extends StatelessWidget {
                 final ok = await vm.deleteCredentialByModel(credential);
                 if (!context.mounted) return;
                 if (ok) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('已删除凭据')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Credential deleted')),
+                  );
                 } else if (vm.errorMessage != null && !vm.pinRequired) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('删除失败：${vm.errorMessage}')),
+                    SnackBar(
+                      content: Text('Delete failed: ${vm.errorMessage}'),
+                    ),
                   );
                 }
               },
