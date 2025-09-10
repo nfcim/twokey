@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 
 import 'package:fauth/main.dart';
 import 'package:fauth/viewmodels/navigation_viewmodel.dart';
-import 'package:fauth/widgets/adaptive_scaffold.dart';
+import 'package:fauth/views/home/widgets/adaptive_scaffold.dart';
 
 void main() {
   testWidgets('App renders HomePage with navigation', (

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:fauth/common/system.dart' as system;
-import 'package:fauth/pages/home_page.dart';
+import 'package:fauth/views/home/home_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
