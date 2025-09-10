@@ -22,8 +22,8 @@ class AdaptiveScaffold extends StatelessWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.body,
-    this.railExtendedMinWidth = 640,
-    this.bottomNavMaxWidth = 450,
+    this.railExtendedMinWidth = 960,
+    this.bottomNavMaxWidth = 640,
   });
 
   @override
