@@ -17,7 +17,7 @@ class CredentialsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
             child: Row(
               children: [
                 Icon(
@@ -36,14 +36,14 @@ class CredentialsSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                IconButton(
-                  padding: EdgeInsets.zero,
+                TextButton.icon(
                   onPressed: vm.isLoading
                       ? null
                       : () async {
                           await vm.fetchCredentials();
                         },
                   icon: const Icon(Icons.refresh),
+                  label: Text("Refresh"),
                 ),
               ],
             ),
