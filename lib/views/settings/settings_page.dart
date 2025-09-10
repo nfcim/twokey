@@ -9,16 +9,15 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _isDarkMode = false;
-  String _language = '简体中文';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           SwitchListTile(
-            title: const Text('深色模式'),
+            title: const Text('Dark mode'),
             value: _isDarkMode,
             onChanged: (value) {
               setState(() {
@@ -27,24 +26,7 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           ListTile(
-            title: const Text('语言'),
-            trailing: DropdownButton<String>(
-              value: _language,
-              items: const [
-                DropdownMenuItem(value: '简体中文', child: Text('简体中文')),
-                DropdownMenuItem(value: 'English', child: Text('English')),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _language = value;
-                  });
-                }
-              },
-            ),
-          ),
-          ListTile(
-            title: const Text('关于'),
+            title: const Text('About'),
             onTap: () {
               showAboutDialog(
                 context: context,
@@ -54,18 +36,6 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             },
           ),
-          ListTile(
-            title: const Text('Test setting 1'),
-            subtitle: const Text('Subtitle'),
-          ),
-          ListTile(title: const Text('Test setting 2')),
-          ListTile(title: const Text('Test setting 3')),
-          ListTile(title: const Text('Test setting 4')),
-          ListTile(title: const Text('Test setting 5')),
-          ListTile(title: const Text('Test setting 6')),
-          ListTile(title: const Text('Test setting 7')),
-          ListTile(title: const Text('Test setting 8')),
-          ListTile(title: const Text('Test setting 9')),
         ],
       ),
     );
