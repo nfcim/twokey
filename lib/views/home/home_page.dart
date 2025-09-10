@@ -1,6 +1,7 @@
 import 'package:fauth/views/keys/keys_page.dart';
 import 'package:fauth/views/settings/settings_page.dart';
 import 'package:fauth/viewmodels/navigation_viewmodel.dart';
+import 'package:fauth/views/logger/logger_page.dart';
 import 'package:fauth/views/home/widgets/adaptive_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ class HomePage extends StatelessWidget {
       items: const [
         NavItem(icon: Icons.key, label: 'WebAuthn'),
         NavItem(icon: Icons.settings, label: 'Settings'),
+        NavItem(icon: Icons.terminal, label: 'Logger'),
       ],
       selectedIndex: nav.selectedIndex,
       onSelected: nav.select,
@@ -30,6 +32,8 @@ class HomePage extends StatelessWidget {
         return const KeysPage();
       case 1:
         return SettingsPage();
+      case 2:
+        return const LoggerPage();
       default:
         return const Center(child: Text('Page not implemented'));
     }

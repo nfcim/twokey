@@ -2,6 +2,8 @@ import 'package:fauth/api/ccid_fido_api.dart';
 import 'package:fauth/repositories/credential_repository.dart';
 import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:fauth/viewmodels/navigation_viewmodel.dart';
+import 'package:fauth/views/logger/models/log_viewmodel.dart';
+import 'package:fauth/common/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -32,6 +34,7 @@ void main() {
           create: (_) => KeysViewModel(CredentialRepository(CcidFidoApi())),
         ),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
+        ChangeNotifierProvider(create: (_) => LogViewModel(AppLogger.stream)),
       ],
       child: const MyApp(),
     ),
