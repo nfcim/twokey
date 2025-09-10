@@ -17,8 +17,8 @@ class HomePage extends StatelessWidget {
     return AdaptiveScaffold(
       items: const [
         NavItem(icon: Icons.key, label: 'WebAuthn'),
-        NavItem(icon: Icons.settings, label: 'Settings'),
         NavItem(icon: Icons.terminal, label: 'Logger'),
+        NavItem(icon: Icons.settings, label: 'Settings'),
       ],
       selectedIndex: nav.selectedIndex,
       onSelected: nav.select,
@@ -31,9 +31,9 @@ class HomePage extends StatelessWidget {
       case 0:
         return const KeysPage();
       case 1:
-        return SettingsPage();
-      case 2:
         return const LoggerPage();
+      case 2:
+        return SettingsPage();
       default:
         return const Center(child: Text('Page not implemented'));
     }
