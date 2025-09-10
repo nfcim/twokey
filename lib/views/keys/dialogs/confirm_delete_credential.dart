@@ -34,7 +34,11 @@ Future<bool> showConfirmDeleteCredentialDialog(
               onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
-            TextButton(
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
               onPressed: controller.text == required
                   ? () => Navigator.of(context).pop(true)
                   : null,
