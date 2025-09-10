@@ -23,8 +23,7 @@ class _KeysPageState extends State<KeysPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final vm = context.read<KeysViewModel>();
-      await vm.fetchAuthenticatorInfo();
-      await vm.fetchCredentials();
+      await vm.ensureLoaded();
     });
   }
 

@@ -16,6 +16,7 @@ class KeysViewModel extends ChangeNotifier {
 
   bool _isConnected = false;
   Completer<String>? _pinCompleter; // waits for user PIN entry
+  bool _hasLoaded = false; // guards initial data loading
 
   KeysViewModel(this._repository);
 
@@ -47,6 +48,25 @@ class KeysViewModel extends ChangeNotifier {
 
   Future<bool> deleteCredentialByModel(Credential credential) async =>
       deleteCredential(credential.userId);
+
+  /// Ensures authenticator info and credentials are loaded
+  /// Returns true if data is available or loaded successfully.
+  Future<bool> ensureLoaded() async {
+    if (_hasLoaded && authenticatorInfo != null && credentials.isNotEmpty) {
+      return true;
+    }
+    // Try to load authenticator info (no PIN needed, loop handles connection and PIN retries)
+    final infoOk = await fetchAuthenticatorInfo();
+    if (!infoOk) {
+      return false;
+    }
+    // Load credentials once; this may require PIN
+    final credsOk = await fetchCredentials();
+    if (credsOk) {
+      _hasLoaded = true;
+    }
+    return credsOk;
+  }
 
   Future<bool> testRegister({
     required String username,
