@@ -3,6 +3,7 @@ import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:fauth/models/credential.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/confirm_delete_credential.dart';
+import 'package:fauth/widgets/card.dart';
 
 class CredentialsSection extends StatelessWidget {
   const CredentialsSection({super.key});
@@ -10,54 +11,71 @@ class CredentialsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<KeysViewModel>();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return CommonCard(
+      onPressed: () {},
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+            child: Row(
               children: [
-                const Icon(Icons.vpn_key, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Credentials',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                Icon(
+                  Icons.vpn_key,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                const Spacer(),
-                TextButton.icon(
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Credentials',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  padding: EdgeInsets.zero,
                   onPressed: vm.isLoading
                       ? null
                       : () async {
                           await vm.fetchCredentials();
                         },
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            if (vm.isLoading && vm.credentials.isEmpty)
-              const LinearProgressIndicator(),
-            if (vm.credentials.isEmpty && !vm.isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24.0),
-                child: Center(child: Text('No credentials')),
-              )
-            else ...[
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: vm.credentials.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final credential = vm.credentials[index];
-                  return _CredentialTile(credential: credential);
-                },
-              ),
-            ],
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (vm.isLoading && vm.credentials.isEmpty)
+                  const LinearProgressIndicator(),
+                if (vm.credentials.isEmpty && !vm.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.0),
+                    child: Center(child: Text('No credentials')),
+                  )
+                else ...[
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: vm.credentials.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final credential = vm.credentials[index];
+                      return _CredentialTile(credential: credential);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

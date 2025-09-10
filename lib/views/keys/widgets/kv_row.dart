@@ -14,11 +14,11 @@ class KvRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 96,
+            width: 84,
             child: Text(label, style: const TextStyle(color: Colors.black54)),
           ),
           const SizedBox(width: 8),
-          Expanded(child: SelectableText(value)),
+          Expanded(child: Text(value)),
         ],
       ),
     );
