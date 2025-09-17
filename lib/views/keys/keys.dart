@@ -68,6 +68,7 @@ class _KeysPageState extends State<KeysPage> {
         actions: [
           TextButton(
             onPressed: () {
+              vm.cancelPinRequest();
               Navigator.of(context).pop();
               _pinDialogOpen = false;
             },

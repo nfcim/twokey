@@ -20,6 +20,10 @@ class KeysViewModel extends ChangeNotifier {
 
   KeysViewModel(this._repository);
 
+  // Exception used to signal that the user cancelled PIN entry
+  // This allows in-flight operations awaiting a PIN to terminate gracefully.
+  static final PinCancelledException _pinCancelled = PinCancelledException();
+
   @override
   void dispose() {
     _repository.disconnect();
@@ -123,6 +127,18 @@ class KeysViewModel extends ChangeNotifier {
     }
   }
 
+  /// Cancels the current PIN request, if any, and terminates the awaiting
+  /// operation by completing the PIN future with a cancellation error.
+  void cancelPinRequest() {
+    pinRequired = false;
+    errorMessage = null;
+    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
+      _pinCompleter!.completeError(_pinCancelled);
+      _pinCompleter = null;
+    }
+    notifyListeners();
+  }
+
   Future<String> _awaitPin() {
     if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
       return _pinCompleter!.future;
@@ -148,7 +164,16 @@ class KeysViewModel extends ChangeNotifier {
           notifyListeners();
           return false;
         }
-        await _awaitPin();
+        try {
+          await _awaitPin();
+        } catch (e) {
+          if (identical(e, _pinCancelled) || e is PinCancelledException) {
+            isLoading = false;
+            notifyListeners();
+            return false;
+          }
+          rethrow;
+        }
         continue;
       }
       try {
@@ -160,7 +185,16 @@ class KeysViewModel extends ChangeNotifier {
       } on CtapError catch (e) {
         if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
           _isConnected = false;
-          await _awaitPin();
+          try {
+            await _awaitPin();
+          } catch (e) {
+            if (identical(e, _pinCancelled) || e is PinCancelledException) {
+              isLoading = false;
+              notifyListeners();
+              return false;
+            }
+            rethrow;
+          }
           continue;
         }
         errorMessage = e.toString();
@@ -191,7 +225,17 @@ class KeysViewModel extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-      final pin = await _awaitPin();
+      String pin;
+      try {
+        pin = await _awaitPin();
+      } catch (e) {
+        if (identical(e, _pinCancelled) || e is PinCancelledException) {
+          isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        rethrow;
+      }
       try {
         final value = await op(pin);
         onSuccess?.call(value);
@@ -216,4 +260,9 @@ class KeysViewModel extends ChangeNotifier {
       }
     }
   }
+}
+
+class PinCancelledException implements Exception {
+  @override
+  String toString() => 'PIN entry cancelled by user';
 }
