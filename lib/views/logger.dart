@@ -106,35 +106,43 @@ class _LoggerToolbar extends StatelessWidget {
                 onPressed: vm.clear,
               ),
               const SizedBox(width: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  ChoiceChip(
-                    label: const Text('All'),
-                    selected: vm.minLevel == null,
-                    onSelected: (_) => vm.setMinLevel(null),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('All'),
+                        selected: vm.minLevel == null,
+                        onSelected: (_) => vm.setMinLevel(null),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('Debug+'),
+                        selected: vm.minLevel == Level.debug,
+                        onSelected: (_) => vm.setMinLevel(Level.debug),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('Info+'),
+                        selected: vm.minLevel == Level.info,
+                        onSelected: (_) => vm.setMinLevel(Level.info),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('Warn+'),
+                        selected: vm.minLevel == Level.warning,
+                        onSelected: (_) => vm.setMinLevel(Level.warning),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('Error'),
+                        selected: vm.minLevel == Level.error,
+                        onSelected: (_) => vm.setMinLevel(Level.error),
+                      ),
+                    ],
                   ),
-                  ChoiceChip(
-                    label: const Text('Debug+'),
-                    selected: vm.minLevel == Level.debug,
-                    onSelected: (_) => vm.setMinLevel(Level.debug),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Info+'),
-                    selected: vm.minLevel == Level.info,
-                    onSelected: (_) => vm.setMinLevel(Level.info),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Warn+'),
-                    selected: vm.minLevel == Level.warning,
-                    onSelected: (_) => vm.setMinLevel(Level.warning),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Error'),
-                    selected: vm.minLevel == Level.error,
-                    onSelected: (_) => vm.setMinLevel(Level.error),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
