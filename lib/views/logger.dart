@@ -2,13 +2,14 @@ import 'package:fauth/viewmodels/log_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import 'package:fauth/common/context.dart';
 
 class LoggerPage extends StatelessWidget {
   const LoggerPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = context.colorScheme;
     return Container(
       color: colorScheme.surface,
       child: Column(
@@ -96,7 +97,7 @@ class _LoggerToolbar extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Clear',
-                icon: const Icon(Icons.clear_all),
+                icon: const Icon(Icons.delete_outline),
                 onPressed: vm.clear,
               ),
               const SizedBox(width: 8),
