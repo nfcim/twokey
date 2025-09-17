@@ -3,6 +3,7 @@ import 'package:fauth/repositories/credential_repository.dart';
 import 'package:fauth/viewmodels/keys_viewmodel.dart';
 import 'package:fauth/viewmodels/navigation_viewmodel.dart';
 import 'package:fauth/viewmodels/log_viewmodel.dart';
+import 'package:fauth/viewmodels/theme_viewmodel.dart';
 import 'package:fauth/common/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,7 @@ void main() {
           lazy: false,
           create: (_) => LogViewModel(AppLogger.stream),
         ),
+        ChangeNotifierProvider(create: (_) => ThemeViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -49,11 +51,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeVm = Provider.of<ThemeViewModel>(context);
     return MaterialApp(
       title: 'FAuth',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
+        brightness: Brightness.light,
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+      themeMode: themeVm.themeMode,
       home: const HomePage(),
     );
   }

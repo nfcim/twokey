@@ -1,3 +1,4 @@
+import 'package:fauth/common/context.dart';
 import 'package:flutter/material.dart';
 
 class KvRow extends StatelessWidget {
@@ -15,7 +16,10 @@ class KvRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 84,
-            child: Text(label, style: const TextStyle(color: Colors.black54)),
+            child: Text(
+              label,
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(value)),
