@@ -1,4 +1,5 @@
 import 'package:fauth/viewmodels/log_viewmodel.dart';
+import 'package:fauth/widgets/card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -83,11 +84,9 @@ class _LoggerToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<LogViewModel>();
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: SafeArea(
-        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             children: [
               IconButton(
@@ -101,29 +100,35 @@ class _LoggerToolbar extends StatelessWidget {
                 onPressed: vm.clear,
               ),
               const SizedBox(width: 8),
-              DropdownButton<Level?>(
-                value: vm.minLevel,
-                hint: const Text('Level: All'),
-                items: const [
-                  DropdownMenuItem<Level?>(value: null, child: Text('All')),
-                  DropdownMenuItem<Level?>(
-                    value: Level.debug,
-                    child: Text('Debug+'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('All'),
+                    selected: vm.minLevel == null,
+                    onSelected: (_) => vm.setMinLevel(null),
                   ),
-                  DropdownMenuItem<Level?>(
-                    value: Level.info,
-                    child: Text('Info+'),
+                  ChoiceChip(
+                    label: const Text('Debug+'),
+                    selected: vm.minLevel == Level.debug,
+                    onSelected: (_) => vm.setMinLevel(Level.debug),
                   ),
-                  DropdownMenuItem<Level?>(
-                    value: Level.warning,
-                    child: Text('Warn+'),
+                  ChoiceChip(
+                    label: const Text('Info+'),
+                    selected: vm.minLevel == Level.info,
+                    onSelected: (_) => vm.setMinLevel(Level.info),
                   ),
-                  DropdownMenuItem<Level?>(
-                    value: Level.error,
-                    child: Text('Error'),
+                  ChoiceChip(
+                    label: const Text('Warn+'),
+                    selected: vm.minLevel == Level.warning,
+                    onSelected: (_) => vm.setMinLevel(Level.warning),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Error'),
+                    selected: vm.minLevel == Level.error,
+                    onSelected: (_) => vm.setMinLevel(Level.error),
                   ),
                 ],
-                onChanged: (v) => vm.setMinLevel(v),
               ),
             ],
           ),
