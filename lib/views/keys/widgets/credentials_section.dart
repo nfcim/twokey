@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:fauth/viewmodels/keys_viewmodel.dart';
-import 'package:fauth/models/credential.dart';
+import 'package:flkey/viewmodels/keys_viewmodel.dart';
+import 'package:flkey/models/credential.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/confirm_delete_credential.dart';
-import 'package:fauth/widgets/card.dart';
+import 'package:flkey/widgets/card.dart';
 
 class CredentialsSection extends StatelessWidget {
   const CredentialsSection({super.key});

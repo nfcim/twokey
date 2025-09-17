@@ -1,15 +1,15 @@
-import 'package:fauth/api/ccid_fido_api.dart';
-import 'package:fauth/repositories/credential_repository.dart';
-import 'package:fauth/viewmodels/keys_viewmodel.dart';
-import 'package:fauth/viewmodels/navigation_viewmodel.dart';
-import 'package:fauth/viewmodels/log_viewmodel.dart';
-import 'package:fauth/viewmodels/theme_viewmodel.dart';
-import 'package:fauth/common/app_logger.dart';
+import 'package:flkey/api/ccid_fido_api.dart';
+import 'package:flkey/repositories/credential_repository.dart';
+import 'package:flkey/viewmodels/keys_viewmodel.dart';
+import 'package:flkey/viewmodels/navigation_viewmodel.dart';
+import 'package:flkey/viewmodels/log_viewmodel.dart';
+import 'package:flkey/viewmodels/theme_viewmodel.dart';
+import 'package:flkey/common/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:fauth/common/system.dart' as system;
-import 'package:fauth/views/home.dart';
+import 'package:flkey/common/system.dart' as system;
+import 'package:flkey/views/home.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeVm = Provider.of<ThemeViewModel>(context);
     return MaterialApp(
-      title: 'FAuth',
+      title: 'FlKey',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,

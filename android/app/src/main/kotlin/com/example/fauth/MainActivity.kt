@@ -1,4 +1,4 @@
-package com.example.fauth
+package com.example.flkey
 
 import io.flutter.embedding.android.FlutterActivity
 

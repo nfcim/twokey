@@ -1,6 +1,6 @@
 {
-    "name": "fauth",
-    "short_name": "fauth",
+    "name": "flkey",
+    "short_name": "flkey",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

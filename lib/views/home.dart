@@ -1,8 +1,8 @@
-import 'package:fauth/views/keys/keys.dart';
-import 'package:fauth/views/settings.dart';
-import 'package:fauth/viewmodels/navigation_viewmodel.dart';
-import 'package:fauth/views/logger.dart';
-import 'package:fauth/widgets/adaptive_scaffold.dart';
+import 'package:flkey/views/keys/keys.dart';
+import 'package:flkey/views/settings.dart';
+import 'package:flkey/viewmodels/navigation_viewmodel.dart';
+import 'package:flkey/views/logger.dart';
+import 'package:flkey/widgets/adaptive_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fauth/viewmodels/keys_viewmodel.dart';
+import 'package:flkey/viewmodels/keys_viewmodel.dart';
 import 'widgets/device_info_section.dart';
 import 'widgets/credentials_section.dart';
 import 'widgets/developer_tools_section.dart';

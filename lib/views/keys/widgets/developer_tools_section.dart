@@ -1,6 +1,6 @@
-import 'package:fauth/widgets/card.dart';
+import 'package:flkey/widgets/card.dart';
 import 'package:flutter/material.dart';
-import 'package:fauth/viewmodels/keys_viewmodel.dart';
+import 'package:flkey/viewmodels/keys_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class DeveloperToolsSection extends StatelessWidget {

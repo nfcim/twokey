@@ -1,8 +1,8 @@
-import 'package:fauth/viewmodels/log_viewmodel.dart';
+import 'package:flkey/viewmodels/log_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-import 'package:fauth/common/context.dart';
+import 'package:flkey/common/context.dart';
 
 class LoggerPage extends StatelessWidget {
   const LoggerPage({super.key});
