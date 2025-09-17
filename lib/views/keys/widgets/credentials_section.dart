@@ -37,19 +37,24 @@ class CredentialsSection extends StatelessWidget {
                   ),
                 ),
                 TextButton.icon(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
                   onPressed: vm.isLoading
                       ? null
                       : () async {
                           await vm.fetchCredentials();
                         },
                   icon: const Icon(Icons.refresh),
-                  label: Text("Refresh"),
+                  label: const Text('Refresh'),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
