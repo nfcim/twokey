@@ -1,5 +1,4 @@
 import 'package:fauth/viewmodels/log_viewmodel.dart';
-import 'package:fauth/widgets/card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -23,29 +22,36 @@ class LoggerPage extends StatelessWidget {
                 if (entries.isEmpty) {
                   return const Center(child: Text('No logs yet'));
                 }
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: entries.length,
-                  itemBuilder: (context, index) {
-                    final e = entries[entries.length - 1 - index];
-                    final color = _colorForLevel(context, e.level);
-                    return ListTile(
-                      dense: true,
-                      title: SelectableText(
-                        '${_fmtTime(e.time)} [${e.level.name.toUpperCase()}] ${e.message}',
-                        style: TextStyle(fontFamily: 'monospace', color: color),
-                      ),
-                      subtitle: e.stackTrace != null
-                          ? SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: SelectableText(
-                                e.stackTrace.toString(),
-                                style: const TextStyle(fontFamily: 'monospace'),
-                              ),
-                            )
-                          : null,
-                    );
-                  },
+                return SelectionArea(
+                  child: ListView.builder(
+                    reverse: true,
+                    itemCount: entries.length,
+                    itemBuilder: (context, index) {
+                      final e = entries[entries.length - 1 - index];
+                      final color = _colorForLevel(context, e.level);
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          '${_fmtTime(e.time)} [${e.level.name.toUpperCase()}] ${e.message}',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            color: color,
+                          ),
+                        ),
+                        subtitle: e.stackTrace != null
+                            ? SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Text(
+                                  e.stackTrace.toString(),
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              )
+                            : null,
+                      );
+                    },
+                  ),
                 );
               },
             ),
