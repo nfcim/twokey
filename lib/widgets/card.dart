@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fauth/common/context.dart';
+import 'package:fauth/common/color.dart';
 
 class CommonCard extends StatelessWidget {
   const CommonCard({
@@ -16,6 +18,22 @@ class CommonCard extends StatelessWidget {
   final Widget child;
   final double radius;
 
+  BorderSide getBorderSide(BuildContext context, Set<WidgetState> states) {
+    final colorScheme = context.colorScheme;
+    final hoverColor = colorScheme.primary.withOpacity60();
+    if (states.contains(WidgetState.hovered) ||
+        states.contains(WidgetState.focused) ||
+        states.contains(WidgetState.pressed)) {
+      return BorderSide(color: hoverColor);
+    }
+    return BorderSide(color: colorScheme.surfaceContainerHighest);
+  }
+
+  Color? getBackgroundColor(BuildContext context, Set<WidgetState> states) {
+    final colorScheme = context.colorScheme;
+    return colorScheme.surfaceContainerLow;
+  }
+
   @override
   Widget build(BuildContext context) {
     return OutlinedButton(
@@ -28,6 +46,13 @@ class CommonCard extends StatelessWidget {
           ),
         ),
         iconSize: WidgetStateProperty.all(20),
+        iconColor: WidgetStatePropertyAll(context.colorScheme.primary),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => getBackgroundColor(context, states),
+        ),
+        side: WidgetStateProperty.resolveWith(
+          (states) => getBorderSide(context, states),
+        ),
       ),
       onPressed: onPressed,
       child: child,
