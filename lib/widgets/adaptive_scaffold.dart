@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fauth/common/context.dart';
 
 class NavItem {
   final IconData icon;
@@ -41,16 +42,16 @@ class AdaptiveScaffold extends StatelessWidget {
                   ),
                 ),
                 SafeArea(
-                  child: BottomNavigationBar(
-                    items: [
+                  child: NavigationBar(
+                    destinations: [
                       for (final it in items)
-                        BottomNavigationBarItem(
+                        NavigationDestination(
                           icon: Icon(it.icon),
                           label: it.label,
                         ),
                     ],
-                    currentIndex: selectedIndex,
-                    onTap: onSelected,
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: onSelected,
                   ),
                 ),
               ],
@@ -64,6 +65,7 @@ class AdaptiveScaffold extends StatelessWidget {
             children: [
               SafeArea(
                 child: NavigationRail(
+                  backgroundColor: context.colorScheme.surfaceContainer,
                   extended: railExtended,
                   destinations: [
                     for (final it in items)
