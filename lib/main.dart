@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flkey/common/system.dart' as system;
 import 'package:flkey/views/home.dart';
+import 'package:flkey/widgets/notifier.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,10 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
       ),
       themeMode: themeVm.themeMode,
+      builder: (context, child) => NotifierHost(
+        key: Notifier.hostKey,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const HomePage(),
     );
   }

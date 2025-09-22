@@ -1,4 +1,5 @@
 import 'package:flkey/widgets/card.dart';
+import 'package:flkey/common/context.dart';
 import 'package:flutter/material.dart';
 import 'package:flkey/viewmodels/keys_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -54,24 +55,18 @@ class DeveloperToolsSection extends StatelessWidget {
                             );
                             if (!context.mounted) return;
                             if (ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Test register succeeded'),
-                                ),
+                              await context.showNotifier(
+                                'Test register succeeded',
                               );
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Test register failed'),
-                                ),
+                              await context.showNotifier(
+                                'Test register failed',
                               );
                             }
                           } catch (e) {
                             if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Test register error: $e'),
-                              ),
+                            await context.showNotifier(
+                              'Test register error: $e',
                             );
                           }
                         },
@@ -85,23 +80,15 @@ class DeveloperToolsSection extends StatelessWidget {
                             final ok = await vm.testVerify();
                             if (!context.mounted) return;
                             if (ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Test verify succeeded'),
-                                ),
+                              await context.showNotifier(
+                                'Test verify succeeded',
                               );
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Test verify failed'),
-                                ),
-                              );
+                              await context.showNotifier('Test verify failed');
                             }
                           } catch (e) {
                             if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Test verify error: $e')),
-                            );
+                            await context.showNotifier('Test verify error: $e');
                           }
                         },
                   child: const Text('Test Verify'),

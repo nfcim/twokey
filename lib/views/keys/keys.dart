@@ -4,7 +4,7 @@ import 'package:flkey/viewmodels/keys_viewmodel.dart';
 import 'widgets/device_info_section.dart';
 import 'widgets/credentials_section.dart';
 import 'widgets/developer_tools_section.dart';
-import 'keys_snackbar_listener.dart';
+import 'package:flkey/common/context.dart';
 
 class KeysPage extends StatefulWidget {
   const KeysPage({super.key});
@@ -16,6 +16,8 @@ class KeysPage extends StatefulWidget {
 class _KeysPageState extends State<KeysPage> {
   final _pinController = TextEditingController();
   bool _pinDialogOpen = false;
+  bool _wasWaitingForTouch = false;
+  String? _lastErrorShown;
 
   @override
   void initState() {
@@ -98,20 +100,39 @@ class _KeysPageState extends State<KeysPage> {
         if (vm.pinRequired) {
           _ensurePin(vm);
         }
-        return KeysSnackbarListener(
-          child: Scaffold(
-            appBar: AppBar(title: const Text('WebAuthn')),
-            body: SafeArea(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  DeviceInfoSection(),
-                  SizedBox(height: 16),
-                  CredentialsSection(),
-                  SizedBox(height: 16),
-                  DeveloperToolsSection(),
-                ],
-              ),
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+          if (vm.waitingForTouch && !_wasWaitingForTouch) {
+            _wasWaitingForTouch = true;
+            await context.showNotifier(
+              'Please complete verification on your security key (e.g. touch or fingerprint)',
+            );
+          } else if (!vm.waitingForTouch && _wasWaitingForTouch) {
+            _wasWaitingForTouch = false;
+          }
+
+          if (vm.errorMessage != null &&
+              !vm.pinRequired &&
+              vm.errorMessage != _lastErrorShown) {
+            _lastErrorShown = vm.errorMessage;
+            await context.showNotifier(
+              vm.errorMessage!,
+              backgroundColor: Theme.of(context).colorScheme.error,
+            );
+          }
+        });
+        return Scaffold(
+          appBar: AppBar(title: const Text('WebAuthn')),
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: const [
+                DeviceInfoSection(),
+                SizedBox(height: 16),
+                CredentialsSection(),
+                SizedBox(height: 16),
+                DeveloperToolsSection(),
+              ],
             ),
           ),
         );

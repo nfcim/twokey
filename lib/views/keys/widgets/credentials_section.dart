@@ -4,6 +4,7 @@ import 'package:flkey/models/credential.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/confirm_delete_credential.dart';
 import 'package:flkey/widgets/card.dart';
+import 'package:flkey/common/context.dart';
 
 class CredentialsSection extends StatelessWidget {
   const CredentialsSection({super.key});
@@ -109,14 +110,10 @@ class _CredentialTile extends StatelessWidget {
                 final ok = await vm.deleteCredentialByModel(credential);
                 if (!context.mounted) return;
                 if (ok) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Credential deleted')),
-                  );
+                  await context.showNotifier('Credential deleted');
                 } else if (vm.errorMessage != null && !vm.pinRequired) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Delete failed: ${vm.errorMessage}'),
-                    ),
+                  await context.showNotifier(
+                    'Delete failed: ${vm.errorMessage}',
                   );
                 }
               },
