@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flkey/common/context.dart';
-import 'package:flkey/common/color.dart';
+import 'package:twokey/common/context.dart';
+import 'package:twokey/common/color.dart';
 
 class CommonCard extends StatelessWidget {
   const CommonCard({

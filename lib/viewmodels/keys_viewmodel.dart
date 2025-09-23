@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:flkey/models/credential.dart';
-import 'package:flkey/repositories/credential_repository.dart';
+import 'package:twokey/models/credential.dart';
+import 'package:twokey/repositories/credential_repository.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
 

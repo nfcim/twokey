@@ -1,13 +1,13 @@
 import 'package:convert/convert.dart';
-import 'package:flkey/api/fido_api.dart';
-import 'package:flkey/models/credential.dart';
+import 'package:twokey/api/fido_api.dart';
+import 'package:twokey/models/credential.dart';
 import 'package:fido2/fido2.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:cbor/cbor.dart' as cbor;
 import 'package:crypto/crypto.dart';
-import 'package:flkey/common/app_logger.dart';
+import 'package:twokey/common/app_logger.dart';
 
 class _ApiCtapDevice extends CtapDevice {
   final Future<Uint8List> Function(Uint8List) _transceive;
@@ -115,7 +115,7 @@ class CredentialRepository {
   // Simple in-memory storage for a test credential (registration + verification)
   // These are only for demonstration/testing purposes.
   final String _rpId = 'localhost';
-  final String _rpName = 'FlKey Test';
+  final String _rpName = 'TwoKey Test';
   late final Fido2Server _server = Fido2Server(
     Fido2Config(rpId: _rpId, rpName: _rpName),
   );

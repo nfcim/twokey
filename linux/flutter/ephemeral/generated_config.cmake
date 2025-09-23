@@ -1,6 +1,6 @@
 # Generated code do not commit.
 file(TO_CMAKE_PATH "/home/inuebisu/manual_apps/flutter" FLUTTER_ROOT)
-file(TO_CMAKE_PATH "/mnt/Documents/Code/FlKey" PROJECT_DIR)
+file(TO_CMAKE_PATH "/mnt/Documents/Code/TwoKey" PROJECT_DIR)
 
 set(FLUTTER_VERSION "1.0.0+1" PARENT_SCOPE)
 set(FLUTTER_VERSION_MAJOR 1 PARENT_SCOPE)
@@ -11,11 +11,11 @@ set(FLUTTER_VERSION_BUILD 1 PARENT_SCOPE)
 # Environment variables to pass to tool_backend.sh
 list(APPEND FLUTTER_TOOL_ENVIRONMENT
   "FLUTTER_ROOT=/home/inuebisu/manual_apps/flutter"
-  "PROJECT_DIR=/mnt/Documents/Code/FlKey"
+  "PROJECT_DIR=/mnt/Documents/Code/TwoKey"
   "DART_DEFINES=RkxVVFRFUl9WRVJTSU9OPTMuMzUuMg==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049MDVkYjk2ODkwOA==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049YThiZmRmYzM5NA==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My45LjA="
   "DART_OBFUSCATION=false"
   "TRACK_WIDGET_CREATION=true"
   "TREE_SHAKE_ICONS=false"
-  "PACKAGE_CONFIG=/mnt/Documents/Code/FlKey/.dart_tool/package_config.json"
-  "FLUTTER_TARGET=/mnt/Documents/Code/FlKey/lib/main.dart"
+  "PACKAGE_CONFIG=/mnt/Documents/Code/TwoKey/.dart_tool/package_config.json"
+  "FLUTTER_TARGET=/mnt/Documents/Code/TwoKey/lib/main.dart"
 )

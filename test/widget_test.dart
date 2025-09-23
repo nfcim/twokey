@@ -9,9 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:flkey/main.dart';
-import 'package:flkey/viewmodels/navigation_viewmodel.dart';
-import 'package:flkey/widgets/adaptive_scaffold.dart';
+import 'package:twokey/main.dart';
+import 'package:twokey/viewmodels/navigation_viewmodel.dart';
+import 'package:twokey/widgets/adaptive_scaffold.dart';
 
 void main() {
   testWidgets('App renders HomePage with navigation', (

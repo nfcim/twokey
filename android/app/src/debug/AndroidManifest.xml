@@ -4,7 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <application
-        android:label="FlKey"
+        android:label="TwoKey"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
     </application>

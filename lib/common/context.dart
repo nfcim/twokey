@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flkey/widgets/notifier.dart';
+import 'package:twokey/widgets/notifier.dart';
 
 extension BuildContextExtension on BuildContext {
   ColorScheme get colorScheme => Theme.of(this).colorScheme;

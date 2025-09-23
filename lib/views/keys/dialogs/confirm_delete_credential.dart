@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flkey/models/credential.dart';
+import 'package:twokey/models/credential.dart';
 
 Future<bool> showConfirmDeleteCredentialDialog(
   BuildContext context,

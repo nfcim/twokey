@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flkey/viewmodels/keys_viewmodel.dart';
+import 'package:twokey/viewmodels/keys_viewmodel.dart';
 import 'widgets/device_info_section.dart';
 import 'widgets/credentials_section.dart';
 import 'widgets/developer_tools_section.dart';
-import 'package:flkey/common/context.dart';
+import 'package:twokey/common/context.dart';
 
 class KeysPage extends StatefulWidget {
   const KeysPage({super.key});

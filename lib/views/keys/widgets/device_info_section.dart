@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flkey/viewmodels/keys_viewmodel.dart';
+import 'package:twokey/viewmodels/keys_viewmodel.dart';
 import 'package:provider/provider.dart';
 import '../../../widgets/kv_row.dart';
-import 'package:flkey/widgets/card.dart';
+import 'package:twokey/widgets/card.dart';
 
 class DeviceInfoSection extends StatelessWidget {
   const DeviceInfoSection({super.key});
