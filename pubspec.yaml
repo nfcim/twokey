@@ -1,5 +1,5 @@
 name: twokey
-description: "A new Flutter project."
+description: "A cross-platform WebAuthn key management application."
 publish_to: "none"
 
 version: 1.0.0+1
