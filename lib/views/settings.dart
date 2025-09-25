@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:twokey/viewmodels/theme_viewmodel.dart';
+import 'package:twokey/viewmodels/theme.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

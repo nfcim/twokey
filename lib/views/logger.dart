@@ -1,4 +1,4 @@
-import 'package:twokey/viewmodels/log_viewmodel.dart';
+import 'package:twokey/viewmodels/log.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';

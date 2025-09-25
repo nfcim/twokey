@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:twokey/viewmodels/keys_viewmodel.dart';
+import 'package:twokey/viewmodels/keys.dart';
 import 'package:provider/provider.dart';
 import '../../../widgets/kv_row.dart';
 import 'package:twokey/widgets/card.dart';

@@ -1,4 +1,4 @@
-import 'package:twokey/viewmodels/navigation_viewmodel.dart';
+import 'package:twokey/viewmodels/navigation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

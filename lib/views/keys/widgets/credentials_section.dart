@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:twokey/viewmodels/keys_viewmodel.dart';
+import 'package:twokey/viewmodels/keys.dart';
 import 'package:twokey/models/credential.dart';
 import 'package:provider/provider.dart';
 import '../dialogs/confirm_delete_credential.dart';

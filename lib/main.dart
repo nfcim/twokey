@@ -1,9 +1,9 @@
 import 'package:twokey/api/ccid_fido_api.dart';
 import 'package:twokey/repositories/credential_repository.dart';
-import 'package:twokey/viewmodels/keys_viewmodel.dart';
-import 'package:twokey/viewmodels/navigation_viewmodel.dart';
-import 'package:twokey/viewmodels/log_viewmodel.dart';
-import 'package:twokey/viewmodels/theme_viewmodel.dart';
+import 'package:twokey/viewmodels/keys.dart';
+import 'package:twokey/viewmodels/navigation.dart';
+import 'package:twokey/viewmodels/log.dart';
+import 'package:twokey/viewmodels/theme.dart';
 import 'package:twokey/common/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
