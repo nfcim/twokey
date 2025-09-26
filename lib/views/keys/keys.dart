@@ -44,7 +44,7 @@ class _KeysPageState extends State<KeysPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text('Please input you PIN:'),
+        title: const Text('Please input your PIN:'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
