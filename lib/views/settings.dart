@@ -29,7 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 context: context,
                 applicationName: 'TwoKey',
                 applicationVersion: '1.0.0',
-                applicationLegalese: '© 2025 inuEbisu',
+                applicationLegalese: '© 2025 nfc.im',
               );
             },
           ),
