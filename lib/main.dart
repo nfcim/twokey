@@ -1,4 +1,4 @@
-import 'package:twokey/api/ccid_fido_api.dart';
+import 'package:twokey/api/unified_fido_api.dart';
 import 'package:twokey/service/authenticator.dart';
 import 'package:twokey/viewmodels/keys.dart';
 import 'package:twokey/viewmodels/navigation.dart';
@@ -33,7 +33,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => KeysViewModel(AuthenticatorService(CcidFidoApi())),
+          create: (_) => KeysViewModel(AuthenticatorService(UnifiedFidoApi())),
         ),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
         ChangeNotifierProvider(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:twokey/models/credential.dart';
 import 'package:twokey/service/authenticator.dart';
+import 'package:twokey/api/unified_fido_api.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
 
@@ -13,6 +14,12 @@ class KeysViewModel extends ChangeNotifier {
   bool pinRequired = false; // signal UI to request PIN
   String? testResult; // registration / verification result text
   bool waitingForTouch = false;
+
+  // Device selection
+  List<FidoDeviceInfo> availableDevices = [];
+  bool deviceSelectionRequired = false;
+  FidoDeviceInfo? selectedDevice;
+  Completer<FidoDeviceInfo>? _deviceSelectionCompleter;
 
   bool _isConnected = false;
   Completer<String>? _pinCompleter; // waits for user PIN entry
@@ -99,10 +106,59 @@ class KeysViewModel extends ChangeNotifier {
     onSuccess: (msg) => testResult = msg,
   );
 
+  // --- Device selection methods ---
+  Future<void> submitDeviceSelection(FidoDeviceInfo device) async {
+    deviceSelectionRequired = false;
+    selectedDevice = device;
+    errorMessage = null;
+    notifyListeners();
+    
+    if (_deviceSelectionCompleter != null && !_deviceSelectionCompleter!.isCompleted) {
+      _deviceSelectionCompleter!.complete(device);
+      _deviceSelectionCompleter = null;
+    }
+  }
+
+  void cancelDeviceSelection() {
+    deviceSelectionRequired = false;
+    errorMessage = null;
+    if (_deviceSelectionCompleter != null && !_deviceSelectionCompleter!.isCompleted) {
+      _deviceSelectionCompleter!.completeError(Exception('Device selection cancelled'));
+      _deviceSelectionCompleter = null;
+    }
+    notifyListeners();
+  }
+
+  Future<FidoDeviceInfo> _awaitDeviceSelection() {
+    if (_deviceSelectionCompleter != null && !_deviceSelectionCompleter!.isCompleted) {
+      return _deviceSelectionCompleter!.future;
+    }
+    deviceSelectionRequired = true;
+    notifyListeners();
+    _deviceSelectionCompleter = Completer<FidoDeviceInfo>();
+    return _deviceSelectionCompleter!.future;
+  }
+
   // --- Internal helpers (loop + PIN) ---
   Future<bool> _connectIfNeeded() async {
     if (_isConnected) return true;
+    
     try {
+      // Check available devices
+      availableDevices = await _repository.getAvailableDevices();
+      
+      // If multiple devices are available, prompt user for selection
+      if (availableDevices.length > 1 && selectedDevice == null) {
+        final device = await _awaitDeviceSelection();
+        _repository.setPreferredDeviceType(device.type);
+        selectedDevice = device;
+      } else if (availableDevices.length == 1) {
+        selectedDevice = availableDevices.first;
+        _repository.setPreferredDeviceType(selectedDevice!.type);
+      } else if (availableDevices.isEmpty) {
+        throw Exception('No FIDO2 devices found. Please ensure your key is connected or near the device.');
+      }
+      
       await _repository.connect();
       _isConnected = true;
       pinRequired = false;

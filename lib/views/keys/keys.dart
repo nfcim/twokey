@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:twokey/viewmodels/keys.dart';
+import 'package:twokey/api/unified_fido_api.dart';
 import 'widgets/device_info_section.dart';
 import 'widgets/credentials_section.dart';
 import 'widgets/developer_tools_section.dart';
@@ -16,6 +17,7 @@ class KeysPage extends StatefulWidget {
 class _KeysPageState extends State<KeysPage> {
   final _pinController = TextEditingController();
   bool _pinDialogOpen = false;
+  bool _deviceSelectionDialogOpen = false;
   bool _wasWaitingForTouch = false;
   String? _lastErrorShown;
 
@@ -33,6 +35,57 @@ class _KeysPageState extends State<KeysPage> {
   void dispose() {
     _pinController.dispose();
     super.dispose();
+  }
+
+  Future<void> _ensureDeviceSelection(KeysViewModel vm) async {
+    if (!vm.deviceSelectionRequired || _deviceSelectionDialogOpen) return;
+    _deviceSelectionDialogOpen = true;
+    await Future.delayed(Duration.zero);
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('Select FIDO2 Device'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Multiple FIDO2 devices are available. Please select one:'),
+            const SizedBox(height: 16),
+            ...vm.availableDevices.map((device) => ListTile(
+              leading: Icon(
+                device.type == FidoDeviceType.ccid 
+                  ? Icons.usb 
+                  : Icons.nfc,
+              ),
+              title: Text(device.name),
+              subtitle: Text(device.description),
+              onTap: () {
+                vm.submitDeviceSelection(device);
+                Navigator.of(context).pop();
+              },
+            )),
+            if (vm.errorMessage != null) const SizedBox(height: 8),
+            if (vm.errorMessage != null)
+              Text(
+                vm.errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              vm.cancelDeviceSelection();
+              Navigator.of(context).pop();
+              _deviceSelectionDialogOpen = false;
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+    _deviceSelectionDialogOpen = false;
   }
 
   Future<void> _ensurePin(KeysViewModel vm) async {
@@ -99,6 +152,9 @@ class _KeysPageState extends State<KeysPage> {
       builder: (_, vm, __) {
         if (vm.pinRequired) {
           _ensurePin(vm);
+        }
+        if (vm.deviceSelectionRequired) {
+          _ensureDeviceSelection(vm);
         }
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
