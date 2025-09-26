@@ -1,3 +1,7 @@
+flutter/ephemeral/
+build/
+.dart_tool/
+
 # Flutter/Dart/Pub related
 .dart_tool/
 .packages

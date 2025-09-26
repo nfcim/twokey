@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Fuchsia related
+.fuchsia/
+
+# VS Code related
+.vscode/
+
+# IntelliJ related
+.idea/
+*.iml
