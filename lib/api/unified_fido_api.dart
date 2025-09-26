@@ -5,14 +5,21 @@ import 'package:twokey/api/nfc_fido_api.dart';
 import 'package:twokey/common/app_logger.dart';
 import 'package:ccid/ccid.dart';
 
+/// Device type enumeration for FIDO2 authenticators
 enum FidoDeviceType {
+  /// CCID (Chip Card Interface Device) smart card readers
   ccid,
+  /// NFC (Near Field Communication) devices
   nfc,
 }
 
+/// Information about an available FIDO2 device
 class FidoDeviceInfo {
+  /// The type of device (CCID or NFC)
   final FidoDeviceType type;
+  /// Human-readable name of the device
   final String name;
+  /// Description of the device
   final String description;
 
   FidoDeviceInfo({
@@ -22,8 +29,17 @@ class FidoDeviceInfo {
   });
 }
 
-/// A unified API that can work with both CCID readers and NFC tags
-/// It automatically detects available devices and allows selection
+/// A unified FIDO API that can work with both CCID readers and NFC tags.
+/// 
+/// This class provides a single interface to interact with different types of
+/// FIDO2 authenticators. It automatically detects available devices and allows
+/// the user to select between them when multiple options are available.
+/// 
+/// Key features:
+/// - Automatic device detection for both CCID and NFC
+/// - Device selection when multiple authenticators are available
+/// - Transparent handling of NFC transient connections with auto-reconnection
+/// - Unified error handling across device types
 class UnifiedFidoApi implements FidoApi {
   FidoApi? _activeApi;
   FidoDeviceType? _selectedDeviceType;

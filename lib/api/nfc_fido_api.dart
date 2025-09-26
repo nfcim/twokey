@@ -3,7 +3,19 @@ import 'package:convert/convert.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:twokey/api/fido_api.dart';
 import 'package:twokey/common/app_logger.dart';
+import 'package:twokey/common/system.dart' as system;
 
+/// NFC implementation of the FIDO API using flutter_nfc_kit.
+/// 
+/// This class provides FIDO2 communication over NFC using the flutter_nfc_kit
+/// package. It handles the transient nature of NFC connections by implementing
+/// automatic reconnection strategies and proper lifecycle management.
+/// 
+/// Key features:
+/// - Automatic NFC tag detection and FIDO2 application selection
+/// - Robust error handling for transient connections
+/// - Platform-aware availability checking (mobile devices only)
+/// - Enhanced reconnection capabilities for lost connections
 class NfcFidoApi implements FidoApi {
   NFCTag? _tag;
 
@@ -17,17 +29,22 @@ class NfcFidoApi implements FidoApi {
 
     // Poll for NFC tags
     AppLogger.debug('Polling for NFC tags...');
-    _tag = await FlutterNfcKit.poll(
-      timeout: Duration(seconds: 10),
-      iosMultipleTagMessage: "Multiple FIDO2 keys detected",
-      iosAlertMessage: "Hold your FIDO2 key near the device",
-    );
-
-    if (_tag == null) {
-      throw Exception('No NFC tag found. Please ensure your key is near the device.');
+    try {
+      _tag = await FlutterNfcKit.poll(
+        timeout: Duration(seconds: 10),
+        iosMultipleTagMessage: "Multiple FIDO2 keys detected",
+        iosAlertMessage: "Hold your FIDO2 key near the device",
+      );
+    } catch (e) {
+      AppLogger.error('Failed to poll NFC tags: $e');
+      throw Exception('Failed to detect NFC tag. Please ensure your FIDO2 key is near the device and try again.');
     }
 
-    AppLogger.debug('NFC tag detected: ${_tag!.type}');
+    if (_tag == null) {
+      throw Exception('No NFC tag found. Please hold your FIDO2 key near the device.');
+    }
+
+    AppLogger.debug('NFC tag detected: ${_tag!.type}, ID: ${_tag!.id}');
 
     // Try to select the FIDO2 application
     const fidoAid = 'A0000006472F0001';
@@ -106,8 +123,16 @@ class NfcFidoApi implements FidoApi {
   /// Check if NFC is available on the current device
   static Future<bool> isAvailable() async {
     try {
+      // NFC is primarily available on mobile devices
+      if (!system.isMobile()) {
+        AppLogger.debug('NFC not available: not a mobile platform');
+        return false;
+      }
+      
       final availability = await FlutterNfcKit.nfcAvailability;
-      return availability == NFCAvailability.available;
+      final isAvailable = availability == NFCAvailability.available;
+      AppLogger.debug('NFC availability check: $availability (available: $isAvailable)');
+      return isAvailable;
     } catch (e) {
       AppLogger.debug('Error checking NFC availability: $e');
       return false;

@@ -50,13 +50,28 @@ class _KeysPageState extends State<KeysPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Multiple FIDO2 devices are available. Please select one:'),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Multiple FIDO2 devices are available. Please select one:'),
+                ),
+                IconButton(
+                  onPressed: () async {
+                    // Refresh device list
+                    await vm.refreshAvailableDevices();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Refresh device list',
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             ...vm.availableDevices.map((device) => ListTile(
               leading: Icon(
                 device.type == FidoDeviceType.ccid 
                   ? Icons.usb 
                   : Icons.nfc,
+                color: Theme.of(context).colorScheme.primary,
               ),
               title: Text(device.name),
               subtitle: Text(device.description),
