@@ -1,6 +1,9 @@
 # TwoKey
 
-TwoKey is a cross-platform WebAuthn key management application built with Flutter. It supports Android, iOS, Windows, macOS, and Linux, providing a unified experience for managing your WebAuthn credentials across devices.
+![Actions Build](https://github.com/nfcim/twokey/workflows/Build%20TwoKey/badge.svg)
+
+TwoKey is a cross-platform WebAuthn key management application built with Flutter.
+It supports Android, iOS, Windows, macOS, and Linux, providing a unified experience for managing your WebAuthn credentials across devices.
 
 ## Features
 
