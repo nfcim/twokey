@@ -9,6 +9,7 @@ import 'package:ccid/ccid.dart';
 enum FidoDeviceType {
   /// CCID (Chip Card Interface Device) smart card readers
   ccid,
+
   /// NFC (Near Field Communication) devices
   nfc,
 }
@@ -17,8 +18,10 @@ enum FidoDeviceType {
 class FidoDeviceInfo {
   /// The type of device (CCID or NFC)
   final FidoDeviceType type;
+
   /// Human-readable name of the device
   final String name;
+
   /// Description of the device
   final String description;
 
@@ -30,11 +33,11 @@ class FidoDeviceInfo {
 }
 
 /// A unified FIDO API that can work with both CCID readers and NFC tags.
-/// 
+///
 /// This class provides a single interface to interact with different types of
 /// FIDO2 authenticators. It automatically detects available devices and allows
 /// the user to select between them when multiple options are available.
-/// 
+///
 /// Key features:
 /// - Automatic device detection for both CCID and NFC
 /// - Device selection when multiple authenticators are available
@@ -50,15 +53,17 @@ class UnifiedFidoApi implements FidoApi {
       // Auto-detect and connect to the first available device
       final availableDevices = await getAvailableDevices();
       if (availableDevices.isEmpty) {
-        throw Exception('No FIDO2 devices found. Please ensure your key is connected or near the device.');
+        throw Exception(
+          'No FIDO2 devices found. Please ensure your key is connected or near the device.',
+        );
       }
-      
+
       // Prefer CCID over NFC for stability if both are available
       final preferredDevice = availableDevices.firstWhere(
         (device) => device.type == FidoDeviceType.ccid,
         orElse: () => availableDevices.first,
       );
-      
+
       await connectToDevice(preferredDevice.type);
     } else {
       await connectToDevice(_selectedDeviceType!);
@@ -116,11 +121,13 @@ class UnifiedFidoApi implements FidoApi {
       final readers = await ccid.listReaders();
       if (readers.isNotEmpty) {
         for (final reader in readers) {
-          devices.add(FidoDeviceInfo(
-            type: FidoDeviceType.ccid,
-            name: reader,
-            description: 'CCID Smart Card Reader',
-          ));
+          devices.add(
+            FidoDeviceInfo(
+              type: FidoDeviceType.ccid,
+              name: reader,
+              description: 'CCID Smart Card Reader',
+            ),
+          );
         }
         AppLogger.info('Found ${readers.length} CCID reader(s)');
       }
@@ -131,11 +138,13 @@ class UnifiedFidoApi implements FidoApi {
     // Check for NFC availability
     try {
       if (await NfcFidoApi.isAvailable()) {
-        devices.add(FidoDeviceInfo(
-          type: FidoDeviceType.nfc,
-          name: 'NFC',
-          description: 'Near Field Communication',
-        ));
+        devices.add(
+          FidoDeviceInfo(
+            type: FidoDeviceType.nfc,
+            name: 'NFC',
+            description: 'Near Field Communication',
+          ),
+        );
         AppLogger.info('NFC is available');
       } else {
         AppLogger.debug('NFC is not available on this device');
@@ -159,7 +168,7 @@ class UnifiedFidoApi implements FidoApi {
   /// Get currently connected device type and name
   String? get connectedDeviceName {
     if (_activeApi == null || _selectedDeviceType == null) return null;
-    
+
     switch (_selectedDeviceType!) {
       case FidoDeviceType.ccid:
         return 'CCID Reader';

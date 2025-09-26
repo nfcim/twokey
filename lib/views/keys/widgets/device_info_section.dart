@@ -57,10 +57,7 @@ class DeviceInfoSection extends StatelessWidget {
                 if (vm.authenticatorInfo == null && vm.isLoading)
                   const LinearProgressIndicator(),
                 if (vm.currentDeviceInfo != null) ...[
-                  KvRow(
-                    label: 'Device',
-                    value: vm.currentDeviceInfo!,
-                  ),
+                  KvRow(label: 'Device', value: vm.currentDeviceInfo!),
                 ],
                 if (vm.authenticatorInfo != null) ...[
                   KvRow(

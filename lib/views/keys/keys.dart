@@ -53,7 +53,9 @@ class _KeysPageState extends State<KeysPage> {
             Row(
               children: [
                 const Expanded(
-                  child: Text('Multiple FIDO2 devices are available. Please select one:'),
+                  child: Text(
+                    'Multiple FIDO2 devices are available. Please select one:',
+                  ),
                 ),
                 IconButton(
                   onPressed: () async {
@@ -66,20 +68,20 @@ class _KeysPageState extends State<KeysPage> {
               ],
             ),
             const SizedBox(height: 16),
-            ...vm.availableDevices.map((device) => ListTile(
-              leading: Icon(
-                device.type == FidoDeviceType.ccid 
-                  ? Icons.usb 
-                  : Icons.nfc,
-                color: Theme.of(context).colorScheme.primary,
+            ...vm.availableDevices.map(
+              (device) => ListTile(
+                leading: Icon(
+                  device.type == FidoDeviceType.ccid ? Icons.usb : Icons.nfc,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: Text(device.name),
+                subtitle: Text(device.description),
+                onTap: () {
+                  vm.submitDeviceSelection(device);
+                  Navigator.of(context).pop();
+                },
               ),
-              title: Text(device.name),
-              subtitle: Text(device.description),
-              onTap: () {
-                vm.submitDeviceSelection(device);
-                Navigator.of(context).pop();
-              },
-            )),
+            ),
             if (vm.errorMessage != null) const SizedBox(height: 8),
             if (vm.errorMessage != null)
               Text(

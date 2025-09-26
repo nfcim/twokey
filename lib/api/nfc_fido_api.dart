@@ -6,11 +6,11 @@ import 'package:twokey/common/app_logger.dart';
 import 'package:twokey/common/system.dart' as system;
 
 /// NFC implementation of the FIDO API using flutter_nfc_kit.
-/// 
+///
 /// This class provides FIDO2 communication over NFC using the flutter_nfc_kit
 /// package. It handles the transient nature of NFC connections by implementing
 /// automatic reconnection strategies and proper lifecycle management.
-/// 
+///
 /// Key features:
 /// - Automatic NFC tag detection and FIDO2 application selection
 /// - Robust error handling for transient connections
@@ -37,11 +37,15 @@ class NfcFidoApi implements FidoApi {
       );
     } catch (e) {
       AppLogger.error('Failed to poll NFC tags: $e');
-      throw Exception('Failed to detect NFC tag. Please ensure your FIDO2 key is near the device and try again.');
+      throw Exception(
+        'Failed to detect NFC tag. Please ensure your FIDO2 key is near the device and try again.',
+      );
     }
 
     if (_tag == null) {
-      throw Exception('No NFC tag found. Please hold your FIDO2 key near the device.');
+      throw Exception(
+        'No NFC tag found. Please hold your FIDO2 key near the device.',
+      );
     }
 
     AppLogger.debug('NFC tag detected: ${_tag!.type}, ID: ${_tag!.id}');
@@ -50,7 +54,7 @@ class NfcFidoApi implements FidoApi {
     const fidoAid = 'A0000006472F0001';
     final selectApdu = '00A4040008$fidoAid';
     AppLogger.debug('--> SELECT FIDO App: $selectApdu');
-    
+
     final response = await FlutterNfcKit.transceive(selectApdu);
     AppLogger.debug('<-- SELECT Response: $response');
 
@@ -80,12 +84,12 @@ class NfcFidoApi implements FidoApi {
     try {
       final commandHex = hex.encode(command);
       AppLogger.debug('--> NFC Command: $commandHex');
-      
+
       final responseHex = await FlutterNfcKit.transceive(commandHex);
       if (responseHex == null) {
         throw Exception('Received null response from NFC tag');
       }
-      
+
       AppLogger.debug('<-- NFC Response: $responseHex');
       return Uint8List.fromList(hex.decode(responseHex));
     } catch (e) {
@@ -128,10 +132,12 @@ class NfcFidoApi implements FidoApi {
         AppLogger.debug('NFC not available: not a mobile platform');
         return false;
       }
-      
+
       final availability = await FlutterNfcKit.nfcAvailability;
       final isAvailable = availability == NFCAvailability.available;
-      AppLogger.debug('NFC availability check: $availability (available: $isAvailable)');
+      AppLogger.debug(
+        'NFC availability check: $availability (available: $isAvailable)',
+      );
       return isAvailable;
     } catch (e) {
       AppLogger.debug('Error checking NFC availability: $e');
@@ -147,7 +153,7 @@ class NfcFidoApi implements FidoApi {
       if (availability != NFCAvailability.available) {
         return false;
       }
-      
+
       // Quick poll to see if any tags are available
       final tag = await FlutterNfcKit.poll(timeout: Duration(seconds: 1));
       if (tag != null) {

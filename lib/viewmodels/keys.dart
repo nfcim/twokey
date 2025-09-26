@@ -140,8 +140,9 @@ class KeysViewModel extends ChangeNotifier {
     selectedDevice = device;
     errorMessage = null;
     notifyListeners();
-    
-    if (_deviceSelectionCompleter != null && !_deviceSelectionCompleter!.isCompleted) {
+
+    if (_deviceSelectionCompleter != null &&
+        !_deviceSelectionCompleter!.isCompleted) {
       _deviceSelectionCompleter!.complete(device);
       _deviceSelectionCompleter = null;
     }
@@ -150,15 +151,19 @@ class KeysViewModel extends ChangeNotifier {
   void cancelDeviceSelection() {
     deviceSelectionRequired = false;
     errorMessage = null;
-    if (_deviceSelectionCompleter != null && !_deviceSelectionCompleter!.isCompleted) {
-      _deviceSelectionCompleter!.completeError(Exception('Device selection cancelled'));
+    if (_deviceSelectionCompleter != null &&
+        !_deviceSelectionCompleter!.isCompleted) {
+      _deviceSelectionCompleter!.completeError(
+        Exception('Device selection cancelled'),
+      );
       _deviceSelectionCompleter = null;
     }
     notifyListeners();
   }
 
   Future<FidoDeviceInfo> _awaitDeviceSelection() {
-    if (_deviceSelectionCompleter != null && !_deviceSelectionCompleter!.isCompleted) {
+    if (_deviceSelectionCompleter != null &&
+        !_deviceSelectionCompleter!.isCompleted) {
       return _deviceSelectionCompleter!.future;
     }
     deviceSelectionRequired = true;
@@ -170,11 +175,11 @@ class KeysViewModel extends ChangeNotifier {
   // --- Internal helpers (loop + PIN) ---
   Future<bool> _connectIfNeeded() async {
     if (_isConnected) return true;
-    
+
     try {
       // Check available devices
       availableDevices = await _repository.getAvailableDevices();
-      
+
       // If multiple devices are available, prompt user for selection
       if (availableDevices.length > 1 && selectedDevice == null) {
         final device = await _awaitDeviceSelection();
@@ -184,9 +189,11 @@ class KeysViewModel extends ChangeNotifier {
         selectedDevice = availableDevices.first;
         _repository.setPreferredDeviceType(selectedDevice!.type);
       } else if (availableDevices.isEmpty) {
-        throw Exception('No FIDO2 devices found. Please ensure your key is connected or near the device.');
+        throw Exception(
+          'No FIDO2 devices found. Please ensure your key is connected or near the device.',
+        );
       }
-      
+
       await _repository.connect();
       _isConnected = true;
       pinRequired = false;
