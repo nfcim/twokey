@@ -108,7 +108,7 @@ class _ApiCtapDevice extends CtapDevice {
   }
 }
 
-class CredentialRepository {
+class AuthenticatorService {
   final FidoApi _fidoApi;
   Ctap2? _ctap2Client;
 
@@ -123,7 +123,7 @@ class CredentialRepository {
   cbor.CborMap? _testCredentialPublicKey;
   int _testSignCount = 0;
 
-  CredentialRepository(this._fidoApi);
+  AuthenticatorService(this._fidoApi);
 
   Future<void> connect() async {
     try {

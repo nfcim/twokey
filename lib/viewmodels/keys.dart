@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:twokey/models/credential.dart';
-import 'package:twokey/repositories/credential_repository.dart';
+import 'package:twokey/service/authenticator.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
 
 class KeysViewModel extends ChangeNotifier {
-  final CredentialRepository _repository;
+  final AuthenticatorService _repository;
   AuthenticatorInfo? authenticatorInfo;
   List<Credential> credentials = [];
   bool isLoading = false;
