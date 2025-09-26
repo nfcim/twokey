@@ -245,7 +245,7 @@ class KeysViewModel extends ChangeNotifier {
       } on CtapError catch (e) {
         if (e.status == CtapStatusCode.ctap2ErrPinAuthInvalid) {
           // Ask for PIN again immediately and retry
-          await Future<void>.delayed(Duration(milliseconds: 0));
+          await Future<void>.delayed(Duration.zero);
           continue;
         }
         errorMessage = e.toString();
