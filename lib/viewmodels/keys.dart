@@ -106,7 +106,35 @@ class KeysViewModel extends ChangeNotifier {
     onSuccess: (msg) => testResult = msg,
   );
 
+  /// Get current device information for UI display
+  String? get currentDeviceInfo {
+    if (selectedDevice != null) {
+      return '${selectedDevice!.name} (${selectedDevice!.description})';
+    }
+    return null;
+  }
+
+  /// Reset connection state (useful for UI refresh)
+  Future<void> resetConnection() async {
+    _isConnected = false;
+    selectedDevice = null;
+    availableDevices.clear();
+    await _repository.disconnect();
+    notifyListeners();
+  }
+
   // --- Device selection methods ---
+  Future<void> refreshAvailableDevices() async {
+    try {
+      availableDevices = await _repository.getAvailableDevices();
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Error refreshing available devices: $e');
+      errorMessage = 'Failed to refresh device list: $e';
+      notifyListeners();
+    }
+  }
+
   Future<void> submitDeviceSelection(FidoDeviceInfo device) async {
     deviceSelectionRequired = false;
     selectedDevice = device;

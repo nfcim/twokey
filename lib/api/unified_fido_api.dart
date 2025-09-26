@@ -81,26 +81,12 @@ class UnifiedFidoApi implements FidoApi {
       throw Exception('No device connected. Call connect() first.');
     }
 
-    // For NFC, we need to handle transient connections
-    if (_selectedDeviceType == FidoDeviceType.nfc) {
-      // For NFC, we might need to re-establish connection for each transaction
-      // due to the transient nature of NFC communication
-      try {
-        return await _activeApi!.transceive(command);
-      } catch (e) {
-        AppLogger.debug('NFC transaction failed, attempting to reconnect: $e');
-        // Try to reconnect once
-        try {
-          await _activeApi!.disconnect();
-          await _activeApi!.connect();
-          return await _activeApi!.transceive(command);
-        } catch (reconnectError) {
-          AppLogger.error('NFC reconnection failed: $reconnectError');
-          rethrow;
-        }
-      }
+    // For NFC, we need to handle transient connections with enhanced reconnection
+    if (_selectedDeviceType == FidoDeviceType.nfc && _activeApi is NfcFidoApi) {
+      return await (_activeApi as NfcFidoApi).transceiveWithReconnect(command);
     }
 
+    // For CCID, use normal transceive
     return await _activeApi!.transceive(command);
   }
 
@@ -120,6 +106,7 @@ class UnifiedFidoApi implements FidoApi {
             description: 'CCID Smart Card Reader',
           ));
         }
+        AppLogger.info('Found ${readers.length} CCID reader(s)');
       }
     } catch (e) {
       AppLogger.debug('Error checking CCID readers: $e');
@@ -133,11 +120,15 @@ class UnifiedFidoApi implements FidoApi {
           name: 'NFC',
           description: 'Near Field Communication',
         ));
+        AppLogger.info('NFC is available');
+      } else {
+        AppLogger.debug('NFC is not available on this device');
       }
     } catch (e) {
       AppLogger.debug('Error checking NFC availability: $e');
     }
 
+    AppLogger.info('Total available FIDO2 devices: ${devices.length}');
     return devices;
   }
 
@@ -148,6 +139,23 @@ class UnifiedFidoApi implements FidoApi {
 
   /// Get currently connected device type
   FidoDeviceType? get connectedDeviceType => _selectedDeviceType;
+
+  /// Get currently connected device type and name
+  String? get connectedDeviceName {
+    if (_activeApi == null || _selectedDeviceType == null) return null;
+    
+    switch (_selectedDeviceType!) {
+      case FidoDeviceType.ccid:
+        return 'CCID Reader';
+      case FidoDeviceType.nfc:
+        return 'NFC Device';
+    }
+  }
+
+  /// Refresh and get all available FIDO2 devices
+  Future<List<FidoDeviceInfo>> refreshAvailableDevices() async {
+    return await getAvailableDevices();
+  }
 
   /// Check if currently connected
   bool get isConnected => _activeApi != null;

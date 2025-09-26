@@ -60,16 +60,47 @@ class NfcFidoApi implements FidoApi {
       throw Exception('NFC tag not connected');
     }
 
-    final commandHex = hex.encode(command);
-    AppLogger.debug('--> NFC Command: $commandHex');
-    
-    final responseHex = await FlutterNfcKit.transceive(commandHex);
-    if (responseHex == null) {
-      throw Exception('Received null response from NFC tag');
+    try {
+      final commandHex = hex.encode(command);
+      AppLogger.debug('--> NFC Command: $commandHex');
+      
+      final responseHex = await FlutterNfcKit.transceive(commandHex);
+      if (responseHex == null) {
+        throw Exception('Received null response from NFC tag');
+      }
+      
+      AppLogger.debug('<-- NFC Response: $responseHex');
+      return Uint8List.fromList(hex.decode(responseHex));
+    } catch (e) {
+      AppLogger.error('NFC transceive error: $e');
+      // For NFC, connection might be lost, so we should mark as disconnected
+      _tag = null;
+      rethrow;
     }
-    
-    AppLogger.debug('<-- NFC Response: $responseHex');
-    return Uint8List.fromList(hex.decode(responseHex));
+  }
+
+  /// Re-establish NFC connection if it was lost
+  Future<void> _reconnectIfNeeded() async {
+    if (_tag == null) {
+      await connect();
+    }
+  }
+
+  /// Enhanced transceive with automatic reconnection for transient NFC
+  Future<Uint8List> transceiveWithReconnect(Uint8List command) async {
+    try {
+      return await transceive(command);
+    } catch (e) {
+      AppLogger.debug('NFC transaction failed, attempting to reconnect: $e');
+      // Try to reconnect once for transient NFC connections
+      try {
+        await _reconnectIfNeeded();
+        return await transceive(command);
+      } catch (reconnectError) {
+        AppLogger.error('NFC reconnection failed: $reconnectError');
+        rethrow;
+      }
+    }
   }
 
   /// Check if NFC is available on the current device
