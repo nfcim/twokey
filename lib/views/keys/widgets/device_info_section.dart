@@ -35,17 +35,6 @@ class DeviceInfoSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () async {
-                    await vm.resetConnection();
-                  },
-                  icon: Icon(
-                    Icons.refresh,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  tooltip: 'Refresh device connection',
-                ),
               ],
             ),
           ),

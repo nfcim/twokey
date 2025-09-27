@@ -27,12 +27,20 @@ class _KeysPageState extends State<KeysPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final vm = context.read<KeysViewModel>();
-      await vm.ensureLoaded();
+      // Do not auto-load on entry; instead, prompt device selection first
+      await vm.refreshAvailableDevices();
+      if (vm.selectedDevice == null) {
+        vm.requestDeviceSelection();
+      }
+      vm.startDeviceMonitor();
     });
   }
 
   @override
   void dispose() {
+    // Stop monitoring when leaving page
+    final vm = context.read<KeysViewModel>();
+    vm.stopDeviceMonitor();
     _pinController.dispose();
     super.dispose();
   }
@@ -46,16 +54,14 @@ class _KeysPageState extends State<KeysPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text('Select FIDO2 Device'),
+        title: const Text('Select FIDO2 Key'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
                 const Expanded(
-                  child: Text(
-                    'Multiple FIDO2 devices are available. Please select one:',
-                  ),
+                  child: Text('Please choose a key to use (CCID or NFC).'),
                 ),
                 IconButton(
                   onPressed: () async {
@@ -82,6 +88,14 @@ class _KeysPageState extends State<KeysPage> {
                 },
               ),
             ),
+            if (vm.availableDevices.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'No keys detected. Connect a CCID reader or enable NFC, then refresh.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
             if (vm.errorMessage != null) const SizedBox(height: 8),
             if (vm.errorMessage != null)
               Text(
@@ -102,6 +116,10 @@ class _KeysPageState extends State<KeysPage> {
         ],
       ),
     );
+    // After dialog closes, if a device was selected, explicitly load data now
+    if (vm.selectedDevice != null) {
+      await vm.ensureLoaded();
+    }
     _deviceSelectionDialogOpen = false;
   }
 
@@ -194,20 +212,55 @@ class _KeysPageState extends State<KeysPage> {
             );
           }
         });
+        final noDevices = vm.availableDevices.isEmpty;
+        final hasSelection = vm.selectedDevice != null;
         return Scaffold(
           appBar: AppBar(title: const Text('WebAuthn')),
           body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: const [
-                DeviceInfoSection(),
-                SizedBox(height: 16),
-                CredentialsSection(),
-                SizedBox(height: 16),
-                DeveloperToolsSection(),
-              ],
-            ),
+            child: noDevices
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'No FIDO2 devices found. Please ensure your key is connected or near the device.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  )
+                : hasSelection
+                ? ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: const [
+                      DeviceInfoSection(),
+                      SizedBox(height: 16),
+                      CredentialsSection(),
+                      SizedBox(height: 16),
+                      DeveloperToolsSection(),
+                    ],
+                  )
+                : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Please choose a key from the dialog to continue.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
           ),
+          floatingActionButton: noDevices
+              ? IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: vm.isLoading
+                      ? null
+                      : () async {
+                          await vm.refreshAvailableDevices();
+                        },
+                  tooltip: 'Refresh',
+                )
+              : (!hasSelection ? null : null),
         );
       },
     );
