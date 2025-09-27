@@ -28,7 +28,10 @@ class KeysViewModel extends ChangeNotifier {
   Timer? _deviceMonitorTimer; // polling-based device hot-plug monitor
   bool _monitorTickInProgress = false;
 
-  KeysViewModel(this._repository);
+  KeysViewModel(this._repository) {
+    // Start global device monitoring as soon as the viewmodel is created
+    startDeviceMonitor();
+  }
 
   // Exception used to signal that the user cancelled PIN entry
   // This allows in-flight operations awaiting a PIN to terminate gracefully.

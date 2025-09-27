@@ -32,15 +32,11 @@ class _KeysPageState extends State<KeysPage> {
       if (vm.selectedDevice == null) {
         vm.requestDeviceSelection();
       }
-      vm.startDeviceMonitor();
     });
   }
 
   @override
   void dispose() {
-    // Stop monitoring when leaving page
-    final vm = context.read<KeysViewModel>();
-    vm.stopDeviceMonitor();
     _pinController.dispose();
     super.dispose();
   }
