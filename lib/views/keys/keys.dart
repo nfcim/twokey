@@ -49,67 +49,69 @@ class _KeysPageState extends State<KeysPage> {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('Select FIDO2 Key'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('Please choose a key to use (CCID or NFC).'),
-                ),
-                IconButton(
-                  onPressed: () async {
-                    // Refresh device list
-                    await vm.refreshAvailableDevices();
+      builder: (_) => Consumer<KeysViewModel>(
+        builder: (__, vmm, ___) => AlertDialog(
+          title: const Text('Select FIDO2 Key'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Please choose a key to use (CCID or NFC).'),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      // Refresh device list
+                      await vmm.refreshAvailableDevices();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh device list',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...vmm.availableDevices.map(
+                (device) => ListTile(
+                  leading: Icon(
+                    device.type == FidoDeviceType.ccid ? Icons.usb : Icons.nfc,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(device.name),
+                  subtitle: Text(device.description),
+                  onTap: () {
+                    vmm.submitDeviceSelection(device);
+                    Navigator.of(context).pop();
                   },
-                  icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh device list',
                 ),
-              ],
+              ),
+              if (vmm.availableDevices.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'No keys detected. Connect a CCID reader or enable NFC, then refresh.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              if (vmm.errorMessage != null) const SizedBox(height: 8),
+              if (vmm.errorMessage != null)
+                Text(
+                  vmm.errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                vmm.cancelDeviceSelection();
+                Navigator.of(context).pop();
+                _deviceSelectionDialogOpen = false;
+              },
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 16),
-            ...vm.availableDevices.map(
-              (device) => ListTile(
-                leading: Icon(
-                  device.type == FidoDeviceType.ccid ? Icons.usb : Icons.nfc,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: Text(device.name),
-                subtitle: Text(device.description),
-                onTap: () {
-                  vm.submitDeviceSelection(device);
-                  Navigator.of(context).pop();
-                },
-              ),
-            ),
-            if (vm.availableDevices.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'No keys detected. Connect a CCID reader or enable NFC, then refresh.',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            if (vm.errorMessage != null) const SizedBox(height: 8),
-            if (vm.errorMessage != null)
-              Text(
-                vm.errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
-              ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              vm.cancelDeviceSelection();
-              Navigator.of(context).pop();
-              _deviceSelectionDialogOpen = false;
-            },
-            child: const Text('Cancel'),
-          ),
-        ],
       ),
     );
     // After dialog closes, if a device was selected, explicitly load data now
