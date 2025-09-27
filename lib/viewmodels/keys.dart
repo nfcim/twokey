@@ -4,6 +4,7 @@ import 'package:twokey/service/authenticator.dart';
 import 'package:twokey/api/unified_fido_api.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
+import 'package:twokey/common/app_logger.dart';
 
 class KeysViewModel extends ChangeNotifier {
   final AuthenticatorService _repository;
