@@ -129,7 +129,7 @@ class AuthenticatorService {
   /// Get available FIDO2 devices (only works with UnifiedFidoApi)
   Future<List<FidoDeviceInfo>> getAvailableDevices() async {
     if (_fidoApi is UnifiedFidoApi) {
-      return (_fidoApi as UnifiedFidoApi).getAvailableDevices();
+      return _fidoApi.getAvailableDevices();
     }
     // For compatibility with direct CCID/NFC APIs, return empty list
     return [];
@@ -138,7 +138,7 @@ class AuthenticatorService {
   /// Set preferred device type (only works with UnifiedFidoApi)
   void setPreferredDeviceType(FidoDeviceType deviceType) {
     if (_fidoApi is UnifiedFidoApi) {
-      (_fidoApi as UnifiedFidoApi).setPreferredDeviceType(deviceType);
+      _fidoApi.setPreferredDeviceType(deviceType);
     }
   }
 

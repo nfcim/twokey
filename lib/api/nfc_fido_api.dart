@@ -58,7 +58,7 @@ class NfcFidoApi implements FidoApi {
     final response = await FlutterNfcKit.transceive(selectApdu);
     AppLogger.debug('<-- SELECT Response: $response');
 
-    if (response == null || !response.endsWith('9000')) {
+    if (!response.endsWith('9000')) {
       await disconnect(); // Clean up the connection
       throw Exception(
         'Failed to select FIDO2 application. Response: $response',
@@ -86,9 +86,6 @@ class NfcFidoApi implements FidoApi {
       AppLogger.debug('--> NFC Command: $commandHex');
 
       final responseHex = await FlutterNfcKit.transceive(commandHex);
-      if (responseHex == null) {
-        throw Exception('Received null response from NFC tag');
-      }
 
       AppLogger.debug('<-- NFC Response: $responseHex');
       return Uint8List.fromList(hex.decode(responseHex));
@@ -153,14 +150,9 @@ class NfcFidoApi implements FidoApi {
       if (availability != NFCAvailability.available) {
         return false;
       }
-
-      // Quick poll to see if any tags are available
-      final tag = await FlutterNfcKit.poll(timeout: Duration(seconds: 1));
-      if (tag != null) {
-        await FlutterNfcKit.finish(); // Clean up
-        return true;
-      }
-      return false;
+      
+      await FlutterNfcKit.finish(); // Clean up
+      return true;
     } catch (e) {
       AppLogger.debug('Error checking for NFC tags: $e');
       return false;
