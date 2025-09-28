@@ -150,7 +150,7 @@ class NfcFidoApi implements FidoApi {
       if (availability != NFCAvailability.available) {
         return false;
       }
-      
+
       await FlutterNfcKit.finish(); // Clean up
       return true;
     } catch (e) {

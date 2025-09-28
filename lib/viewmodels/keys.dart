@@ -25,13 +25,8 @@ class KeysViewModel extends ChangeNotifier {
   bool _isConnected = false;
   Completer<String>? _pinCompleter; // waits for user PIN entry
   bool _hasLoaded = false; // guards initial data loading
-  Timer? _deviceMonitorTimer; // polling-based device hot-plug monitor
-  bool _monitorTickInProgress = false;
 
-  KeysViewModel(this._repository) {
-    // Start global device monitoring as soon as the viewmodel is created
-    startDeviceMonitor();
-  }
+  KeysViewModel(this._repository);
 
   // Exception used to signal that the user cancelled PIN entry
   // This allows in-flight operations awaiting a PIN to terminate gracefully.
@@ -39,7 +34,6 @@ class KeysViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    stopDeviceMonitor();
     _repository.disconnect();
     super.dispose();
   }
@@ -190,83 +184,7 @@ class KeysViewModel extends ChangeNotifier {
     return _deviceSelectionCompleter!.future;
   }
 
-  // --- Device hot-plug monitoring ---
-  void startDeviceMonitor({Duration interval = const Duration(seconds: 1)}) {
-    stopDeviceMonitor();
-    _deviceMonitorTimer = Timer.periodic(interval, (_) => _pollDevicesOnce());
-  }
-
-  void stopDeviceMonitor() {
-    _deviceMonitorTimer?.cancel();
-    _deviceMonitorTimer = null;
-  }
-
-  Future<void> _pollDevicesOnce() async {
-    if (_monitorTickInProgress) return;
-    _monitorTickInProgress = true;
-    try {
-      final newDevices = await _repository.getAvailableDevices();
-
-      // Detect changes
-      final hadDevices = availableDevices.isNotEmpty;
-      final hasDevices = newDevices.isNotEmpty;
-
-      // Update list if changed
-      final listChanged = !_deviceListsEqual(availableDevices, newDevices);
-      if (listChanged) {
-        availableDevices = newDevices;
-        notifyListeners();
-      }
-
-      // If devices disappeared, reset connection and selection
-      if (!hasDevices && (hadDevices || selectedDevice != null)) {
-        await resetConnection();
-      }
-
-      // If devices appeared (from none) or selected device is no longer present, ask selection
-      if (hasDevices) {
-        final selectedStillPresent = selectedDevice == null
-            ? false
-            : newDevices.any(
-                (d) =>
-                    d.type == selectedDevice!.type &&
-                    d.name == selectedDevice!.name,
-              );
-        if (!selectedStillPresent) {
-          _isConnected = false;
-          selectedDevice = null;
-          deviceSelectionRequired = true;
-          errorMessage = null;
-          notifyListeners();
-        }
-        // Auto-open selection dialog when devices appear and nothing is selected
-        if (!hadDevices && selectedDevice == null) {
-          requestDeviceSelection();
-        }
-      }
-    } catch (_) {
-      // Swallow polling errors to avoid UI spam; next tick will retry
-    } finally {
-      _monitorTickInProgress = false;
-    }
-  }
-
-  bool _deviceListsEqual(List<FidoDeviceInfo> a, List<FidoDeviceInfo> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      final da = a[i];
-      final db = b[i];
-      if (da.type != db.type ||
-          da.name != db.name ||
-          da.description != db.description) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // --- Internal helpers (loop + PIN) ---
+  // Internal helpers (loop + PIN)
   Future<bool> _connectIfNeeded() async {
     if (_isConnected) return true;
 
