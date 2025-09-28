@@ -1,5 +1,6 @@
 import 'package:convert/convert.dart';
 import 'package:twokey/api/fido_api.dart';
+import 'package:twokey/api/unified_fido_api.dart';
 import 'package:twokey/models/credential.dart';
 import 'package:fido2/fido2.dart';
 import 'dart:typed_data';
@@ -124,6 +125,22 @@ class AuthenticatorService {
   int _testSignCount = 0;
 
   AuthenticatorService(this._fidoApi);
+
+  /// Get available FIDO2 devices (only works with UnifiedFidoApi)
+  Future<List<FidoDeviceInfo>> getAvailableDevices() async {
+    if (_fidoApi is UnifiedFidoApi) {
+      return _fidoApi.getAvailableDevices();
+    }
+    // For compatibility with direct CCID/NFC APIs, return empty list
+    return [];
+  }
+
+  /// Set preferred device type (only works with UnifiedFidoApi)
+  void setPreferredDeviceType(FidoDeviceType deviceType) {
+    if (_fidoApi is UnifiedFidoApi) {
+      _fidoApi.setPreferredDeviceType(deviceType);
+    }
+  }
 
   Future<void> connect() async {
     try {

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:twokey/models/credential.dart';
 import 'package:twokey/service/authenticator.dart';
+import 'package:twokey/api/unified_fido_api.dart';
 import 'package:fido2/fido2.dart';
 import 'package:flutter/foundation.dart';
+import 'package:twokey/common/app_logger.dart';
 
 class KeysViewModel extends ChangeNotifier {
   final AuthenticatorService _repository;
@@ -13,6 +15,13 @@ class KeysViewModel extends ChangeNotifier {
   bool pinRequired = false; // signal UI to request PIN
   String? testResult; // registration / verification result text
   bool waitingForTouch = false;
+  bool nfcPolling = false;
+
+  // Device selection
+  List<FidoDeviceInfo> availableDevices = [];
+  bool deviceSelectionRequired = false;
+  FidoDeviceInfo? selectedDevice;
+  Completer<FidoDeviceInfo>? _deviceSelectionCompleter;
 
   bool _isConnected = false;
   Completer<String>? _pinCompleter; // waits for user PIN entry
@@ -99,11 +108,119 @@ class KeysViewModel extends ChangeNotifier {
     onSuccess: (msg) => testResult = msg,
   );
 
-  // --- Internal helpers (loop + PIN) ---
+  /// Get current device information for UI display
+  String? get currentDeviceInfo {
+    if (selectedDevice != null) {
+      return '${selectedDevice!.name} (${selectedDevice!.description})';
+    }
+    return null;
+  }
+
+  /// Reset connection state (useful for UI refresh)
+  Future<void> resetConnection() async {
+    _isConnected = false;
+    selectedDevice = null;
+    availableDevices.clear();
+    await _repository.disconnect();
+    authenticatorInfo = null;
+    credentials = [];
+    testResult = null;
+    waitingForTouch = false;
+    nfcPolling = false;
+    notifyListeners();
+  }
+
+  // --- Device selection methods ---
+  Future<void> refreshAvailableDevices() async {
+    try {
+      availableDevices = await _repository.getAvailableDevices();
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('Error refreshing available devices: $e');
+      errorMessage = 'Failed to refresh device list: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Public entry point to request the UI to show device selection dialog
+  void requestDeviceSelection() {
+    deviceSelectionRequired = true;
+    errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<void> submitDeviceSelection(FidoDeviceInfo device) async {
+    deviceSelectionRequired = false;
+    selectedDevice = device;
+    errorMessage = null;
+    notifyListeners();
+
+    if (_deviceSelectionCompleter != null &&
+        !_deviceSelectionCompleter!.isCompleted) {
+      _deviceSelectionCompleter!.complete(device);
+      _deviceSelectionCompleter = null;
+    }
+  }
+
+  void cancelDeviceSelection() {
+    deviceSelectionRequired = false;
+    errorMessage = null;
+    if (_deviceSelectionCompleter != null &&
+        !_deviceSelectionCompleter!.isCompleted) {
+      _deviceSelectionCompleter!.completeError(
+        Exception('Device selection cancelled'),
+      );
+      _deviceSelectionCompleter = null;
+    }
+    notifyListeners();
+  }
+
+  Future<FidoDeviceInfo> _awaitDeviceSelection() {
+    if (_deviceSelectionCompleter != null &&
+        !_deviceSelectionCompleter!.isCompleted) {
+      return _deviceSelectionCompleter!.future;
+    }
+    deviceSelectionRequired = true;
+    notifyListeners();
+    _deviceSelectionCompleter = Completer<FidoDeviceInfo>();
+    return _deviceSelectionCompleter!.future;
+  }
+
+  // Internal helpers (loop + PIN)
   Future<bool> _connectIfNeeded() async {
     if (_isConnected) return true;
+
     try {
-      await _repository.connect();
+      // Check available devices
+      availableDevices = await _repository.getAvailableDevices();
+      // Always require explicit selection at first use, even if only one device
+      if (availableDevices.isEmpty) {
+        throw Exception(
+          'No FIDO2 devices found. Please ensure your key is connected or near the device.',
+        );
+      }
+
+      if (selectedDevice == null) {
+        // Trigger UI to show device selection dialog
+        final device = await _awaitDeviceSelection();
+        _repository.setPreferredDeviceType(device.type);
+        selectedDevice = device;
+      }
+
+      // If NFC is selected, mark polling state for UI hint
+      final bool isNfc = selectedDevice?.type == FidoDeviceType.nfc;
+      if (isNfc) {
+        nfcPolling = true;
+        notifyListeners();
+      }
+      try {
+        await _repository.connect();
+      } finally {
+        if (isNfc) {
+          nfcPolling = false;
+          notifyListeners();
+        }
+      }
       _isConnected = true;
       pinRequired = false;
       return true;

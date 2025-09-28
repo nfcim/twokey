@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:twokey/viewmodels/keys.dart';
+import 'package:twokey/api/unified_fido_api.dart';
 import 'widgets/device_info_section.dart';
 import 'widgets/credentials_section.dart';
 import 'widgets/developer_tools_section.dart';
@@ -16,6 +17,7 @@ class KeysPage extends StatefulWidget {
 class _KeysPageState extends State<KeysPage> {
   final _pinController = TextEditingController();
   bool _pinDialogOpen = false;
+  bool _deviceSelectionDialogOpen = false;
   bool _wasWaitingForTouch = false;
   String? _lastErrorShown;
 
@@ -25,7 +27,11 @@ class _KeysPageState extends State<KeysPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final vm = context.read<KeysViewModel>();
-      await vm.ensureLoaded();
+      // Do not auto-load on entry; instead, prompt device selection first
+      await vm.refreshAvailableDevices();
+      if (vm.selectedDevice == null) {
+        vm.requestDeviceSelection();
+      }
     });
   }
 
@@ -33,6 +39,86 @@ class _KeysPageState extends State<KeysPage> {
   void dispose() {
     _pinController.dispose();
     super.dispose();
+  }
+
+  Future<void> _ensureDeviceSelection(KeysViewModel vm) async {
+    if (!vm.deviceSelectionRequired || _deviceSelectionDialogOpen) return;
+    _deviceSelectionDialogOpen = true;
+    await Future.delayed(Duration.zero);
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Consumer<KeysViewModel>(
+        builder: (__, vmm, ___) => AlertDialog(
+          title: const Text('Select FIDO2 Key'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Please choose a key to use (CCID or NFC).'),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      // Refresh device list
+                      await vmm.refreshAvailableDevices();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh device list',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...vmm.availableDevices.map(
+                (device) => ListTile(
+                  leading: Icon(
+                    device.type == FidoDeviceType.ccid ? Icons.usb : Icons.nfc,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(device.name),
+                  subtitle: Text(device.description),
+                  onTap: () {
+                    vmm.submitDeviceSelection(device);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+              if (vmm.availableDevices.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'No keys detected. Connect a CCID reader or enable NFC, then refresh.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              if (vmm.errorMessage != null) const SizedBox(height: 8),
+              if (vmm.errorMessage != null)
+                Text(
+                  vmm.errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                vmm.cancelDeviceSelection();
+                Navigator.of(context).pop();
+                _deviceSelectionDialogOpen = false;
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+    // After dialog closes, if a device was selected, explicitly load data now
+    if (vm.selectedDevice != null) {
+      await vm.ensureLoaded();
+    }
+    _deviceSelectionDialogOpen = false;
   }
 
   Future<void> _ensurePin(KeysViewModel vm) async {
@@ -100,8 +186,14 @@ class _KeysPageState extends State<KeysPage> {
         if (vm.pinRequired) {
           _ensurePin(vm);
         }
+        if (vm.deviceSelectionRequired) {
+          _ensureDeviceSelection(vm);
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
+          if (vm.nfcPolling) {
+            await context.showNotifier("Hold your FIDO2 key near the device");
+          }
           if (vm.waitingForTouch && !_wasWaitingForTouch) {
             _wasWaitingForTouch = true;
             await context.showNotifier(
@@ -121,20 +213,55 @@ class _KeysPageState extends State<KeysPage> {
             );
           }
         });
+        final noDevices = vm.availableDevices.isEmpty;
+        final hasSelection = vm.selectedDevice != null;
         return Scaffold(
           appBar: AppBar(title: const Text('WebAuthn')),
           body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: const [
-                DeviceInfoSection(),
-                SizedBox(height: 16),
-                CredentialsSection(),
-                SizedBox(height: 16),
-                DeveloperToolsSection(),
-              ],
-            ),
+            child: noDevices
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'No FIDO2 devices found. Please ensure your key is connected or near the device.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  )
+                : hasSelection
+                ? ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: const [
+                      DeviceInfoSection(),
+                      SizedBox(height: 16),
+                      CredentialsSection(),
+                      SizedBox(height: 16),
+                      DeveloperToolsSection(),
+                    ],
+                  )
+                : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Please choose a key from the dialog to continue.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
           ),
+          floatingActionButton: noDevices
+              ? IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: vm.isLoading
+                      ? null
+                      : () async {
+                          await vm.refreshAvailableDevices();
+                        },
+                  tooltip: 'Refresh',
+                )
+              : (!hasSelection ? null : null),
         );
       },
     );
