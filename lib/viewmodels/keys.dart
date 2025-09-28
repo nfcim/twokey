@@ -15,6 +15,7 @@ class KeysViewModel extends ChangeNotifier {
   bool pinRequired = false; // signal UI to request PIN
   String? testResult; // registration / verification result text
   bool waitingForTouch = false;
+  bool nfcPolling = false;
 
   // Device selection
   List<FidoDeviceInfo> availableDevices = [];
@@ -125,6 +126,7 @@ class KeysViewModel extends ChangeNotifier {
     credentials = [];
     testResult = null;
     waitingForTouch = false;
+    nfcPolling = false;
     notifyListeners();
   }
 
@@ -205,7 +207,20 @@ class KeysViewModel extends ChangeNotifier {
         selectedDevice = device;
       }
 
-      await _repository.connect();
+      // If NFC is selected, mark polling state for UI hint
+      final bool isNfc = selectedDevice?.type == FidoDeviceType.nfc;
+      if (isNfc) {
+        nfcPolling = true;
+        notifyListeners();
+      }
+      try {
+        await _repository.connect();
+      } finally {
+        if (isNfc) {
+          nfcPolling = false;
+          notifyListeners();
+        }
+      }
       _isConnected = true;
       pinRequired = false;
       return true;

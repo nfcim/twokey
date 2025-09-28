@@ -191,6 +191,9 @@ class _KeysPageState extends State<KeysPage> {
         }
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
+          if (vm.nfcPolling) {
+            await context.showNotifier("Hold your FIDO2 key near the device");
+          }
           if (vm.waitingForTouch && !_wasWaitingForTouch) {
             _wasWaitingForTouch = true;
             await context.showNotifier(
